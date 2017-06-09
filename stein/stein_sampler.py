@@ -3,10 +3,19 @@ import numpy as np
 
 class SteinSampler(object):
     """Stein Sampler Class"""
-    def __init__(self, grad_log_p, kernel, verbose=True):
+    def __init__(
+            self,
+            grad_log_p,
+            kernel,
+            gd,
+            evaluator=None,
+            verbose=True
+    ):
         """Initialize parameters of the Stein sampler."""
         self.grad_log_p = grad_log_p
         self.kernel = kernel
+        self.gd = gd
+        self.evaluator = evaluator
         self.verbose = verbose
 
     def __phi(self, theta):
@@ -54,17 +63,13 @@ class SteinSampler(object):
 
         # Perform Stein variational gradient descent.
         for i in range(n_iters):
+            # Compute the optimal perturbation.
+            theta += self.gd.update(self.__phi(theta))
+
+            # Print out diagnostics.
             if i % n_prog == 0 and self.verbose:
                 print("Iteration:\t{} / {}".format(i, n_iters))
-            # Compute the optimal perturbation.
-            perturb = self.__phi(theta)
-            # Use Adagrad to update the particles.
-            if i == 0:
-                hist = perturb ** 2
-            else:
-                hist = alpha * hist + (1. - alpha) * (perturb ** 2)
-
-            grad = perturb / (1e-6 + np.sqrt(hist))
-            theta += learning_rate * grad
+            if i % n_prog == 0 and self.evaluator is not None:
+                print("Metric:\t{}".format(self.evaluator(theta)))
 
         return theta
