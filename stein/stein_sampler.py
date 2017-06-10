@@ -36,15 +36,12 @@ class SteinSampler(object):
         for i in range(n_particles):
             g[i] = self.grad_log_p(theta[i])
 
-        # return (np.matmul(K, g) + dK) / n_particles
         return (K.dot(g) + dK) / n_particles
 
     def sample(
             self,
             n_particles,
             n_iters,
-            learning_rate=1e-3,
-            alpha=0.9,
             theta_init=None
     ):
         """Use Stein variational gradient descent to sample from the target

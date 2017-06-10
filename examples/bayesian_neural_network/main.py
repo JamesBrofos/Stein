@@ -113,9 +113,7 @@ def train(X_train, y_train):
     gd = Adam()
     # Perform Stein variational gradient descent.
     stein = SteinSampler(grad_log_p, kernel, gd, evaluator=evaluator)
-    theta = stein.sample(
-        n_particles, n_iters, learning_rate=1e-3, theta_init=theta
-    )
+    theta = stein.sample(n_particles, n_iters, theta_init=theta)
 
     # Normalize the development dataset.
     X_dev = normalization((X_dev, mean_X_train, std_X_train))
@@ -152,7 +150,7 @@ def train(X_train, y_train):
         # If using the empirical precision yields a better fit to the
         # development dataset, then update the log-gamma parameter.
         if lik2 > lik1:
-            theta[i,-2] = loggamma
+            theta[i, -2] = loggamma
 
     return theta
 

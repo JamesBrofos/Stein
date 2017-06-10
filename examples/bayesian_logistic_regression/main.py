@@ -1,8 +1,10 @@
 import numpy as np
+from functools import partial
 from scipy import io
 from sklearn.model_selection import train_test_split
-from stein.kernels import SquaredExponentialKernel
 from stein import SteinSampler
+from stein.kernels import SquaredExponentialKernel
+from stein.gradient_descent import Adagrad
 
 # For reproducibility.
 np.random.seed(0)
@@ -48,21 +50,6 @@ def grad_log_p(theta):
 
     return np.append(dw, dalpha)
 
-
-# Setup parameters of the Stein sampler.
-n_particles = 100
-n_params = X_train.shape[1] + 1
-n_iters = 6000
-# Specify that the Stein sampler should use a squared exponential kernel.
-kernel = SquaredExponentialKernel(n_params)
-
-# Create the Stein sampler.
-stein = SteinSampler(grad_log_p, kernel)
-# Sample using Stein variational gradient descent with a squared exponential
-# kernel on the posterior distribution over the parameters of a Bayesian
-# logistic regression model.
-theta = stein.sample(n_particles, n_iters, learning_rate=1e-2)
-
 def evaluation(theta, X_test, y_test):
     """Compute the test set accuracy of the Bayesian logistic regression
     algorithm using the posterior samples of the linear coefficients. Notice
@@ -79,6 +66,25 @@ def evaluation(theta, X_test, y_test):
     y_hat = (p_hat.mean(axis=1) > 0.5) * 2. - 1.
 
     return np.mean(y_hat == y_test)
+
+# Create a function to serve as an evaluator in the Stein sampler class.
+evaluator = partial(evaluation, X_test=X_test, y_test=y_test)
+
+# Setup parameters of the Stein sampler.
+n_particles = 100
+n_params = X_train.shape[1] + 1
+n_iters = 6000
+# Specify that the Stein sampler should use a squared exponential kernel.
+kernel = SquaredExponentialKernel(n_params)
+# Create a gradient descent object for Stein variational gradient descent.
+gd = Adagrad(learning_rate=1e-2)
+
+# Create the Stein sampler.
+stein = SteinSampler(grad_log_p, kernel, gd, evaluator=evaluator)
+# Sample using Stein variational gradient descent with a squared exponential
+# kernel on the posterior distribution over the parameters of a Bayesian
+# logistic regression model.
+theta = stein.sample(n_particles, n_iters)
 
 
 # Compute the test set performance of the algorithm.

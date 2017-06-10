@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
-from stein.kernels import SquaredExponentialKernel
 from stein import SteinSampler
+from stein.kernels import SquaredExponentialKernel
+from stein.gradient_descent import Adagrad
+
 
 # For reproducibility.
 np.random.seed(0)
@@ -30,16 +32,18 @@ def grad_log_p(theta):
 # Setup parameters of the Stein sampler.
 n_particles = 100
 n_params = k
-n_iters = 1000
+n_iters = 10000
 # Specify that the Stein sampler should use a squared exponential kernel.
 kernel = SquaredExponentialKernel(n_params)
+# Create a gradient descent object for Stein variational gradient descent.
+gd = Adagrad(learning_rate=1e-3)
 
 # Create the Stein sampler.
-stein = SteinSampler(grad_log_p, kernel)
+stein = SteinSampler(grad_log_p, kernel, gd)
 # Sample using Stein variational gradient descent with a squared exponential
 # kernel on the posterior distribution over linear coefficients in a Bayesian
 # linear model.
-theta = stein.sample(n_particles, n_iters, learning_rate=1e-2)
+theta = stein.sample(n_particles, n_iters)
 
 # Now compare to the closed-form solution by computing the posterior mean and
 # posterior covariance.
