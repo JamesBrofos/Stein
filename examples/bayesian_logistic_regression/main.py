@@ -39,7 +39,7 @@ def grad_log_p(theta):
     linear = X.dot(w)
     p_hat = 1.0 / (1.0 + np.exp(-linear))
     # Gradient of the likelihood with respect to the coefficients.
-    dw_data = ((y + 1) / 2.0 - p_hat).T.dot(X)
+    dw_data = ((y + 1.) / 2.0 - p_hat).T.dot(X)
     # Gradient of the prior over coefficients.
     dw_prior = -alpha * w
     # Rescale gradient.
@@ -85,7 +85,6 @@ stein = SteinSampler(grad_log_p, kernel, gd, evaluator=evaluator)
 # kernel on the posterior distribution over the parameters of a Bayesian
 # logistic regression model.
 theta = stein.sample(n_particles, n_iters)
-
 
 # Compute the test set performance of the algorithm.
 acc = evaluation(theta, X_test, y_test)

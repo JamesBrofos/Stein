@@ -3,7 +3,7 @@ import theano.tensor as T
 import theano
 
 
-def construct_neural_network(n_params, alpha, beta):
+def construct_neural_network(n_params, alpha, beta, nonlin=T.nnet.relu):
     # Data variables.
     X = T.matrix("X") # Feature matrix.
     y = T.vector("y") # Labels.
@@ -19,7 +19,7 @@ def construct_neural_network(n_params, alpha, beta):
     log_lambda = T.scalar("log_lambda")
 
     # Prediction produced by the neural network.
-    prediction = T.dot(T.nnet.relu(T.dot(X, w_1) + b_1), w_2) + b_2
+    prediction = T.dot(nonlin(T.dot(X, w_1) + b_1), w_2) + b_2
     # Define the components of the log-posterior distribution.
     log_likelihood = (
         -0.5 * X.shape[0] * (T.log(2*np.pi) - log_gamma)
