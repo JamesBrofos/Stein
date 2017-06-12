@@ -1,6 +1,26 @@
 import numpy as np
 
 
+def compute_phi(theta, kernel, grad_log_p):
+    """Assuming a reproducing kernel Hilbert space with associated kernel, this
+    function computes the optimal perturbation in the particles under functions
+    in the unit ball under the norm of the RKHS. This perturbation can be
+    regarded as the direction that will maximally decrease the KL-divergence
+    between the empirical distribution of the particles and the target
+    distribution.
+    """
+    # Extract the number of particles and number of parameters.
+    n_particles, n_params = theta.shape
+    # Compute the kernel matrices and gradient with respect to the particles.
+    K, dK = kernel.kernel_and_grad(theta)
+    # Compute the gradient of the logarithm of the target density.
+    g = np.zeros((n_particles, n_params))
+    for i in range(n_particles):
+        g[i] = grad_log_p(theta[i])
+
+    return (K.dot(g) + dK) / n_particles
+
+
 class SteinSampler(object):
     """Stein Sampler Class"""
     def __init__(
@@ -17,26 +37,6 @@ class SteinSampler(object):
         self.gd = gd
         self.evaluator = evaluator
         self.verbose = verbose
-
-    def __phi(self, theta):
-        """Assuming a reproducing kernel Hilbert space with associated kernel,
-        this function computes the optimal perturbation in the particles under
-        functions in the unit ball under the norm of the RKHS. This
-        perturbation can be regarded as the direction that will maximally
-        decrease the KL-divergence between the empirical distribution of the
-        particles and the target distribution.
-        """
-        # Extract the number of particles and number of parameters.
-        n_particles, n_params = theta.shape
-        # Compute the kernel matrices and gradient with respect to the
-        # particles.
-        K, dK = self.kernel.kernel_and_grad(theta)
-        # Compute the gradient of the logarithm of the target density.
-        g = np.zeros((n_particles, n_params))
-        for i in range(n_particles):
-            g[i] = self.grad_log_p(theta[i])
-
-        return (K.dot(g) + dK) / n_particles
 
     def sample(
             self,
@@ -61,7 +61,9 @@ class SteinSampler(object):
         # Perform Stein variational gradient descent.
         for i in range(n_iters):
             # Compute the optimal perturbation.
-            theta += self.gd.update(self.__phi(theta))
+            theta += self.gd.update(
+                compute_phi(theta, self.kernel, self.grad_log_p)
+            )
 
             # Print out diagnostics.
             if i % n_prog == 0 and self.verbose:
