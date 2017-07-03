@@ -5,10 +5,8 @@ from scipy.spatial.distance import cdist
 
 class AbstractKernel(object):
     """Abstract Kernel Class"""
-    def __init__(self, n_params, bandwidth=None):
+    def __init__(self):
         """Initialize the parameters of the abstract kernel object."""
-        self.n_params = n_params
-        self.bandwidth = bandwidth
 
     def squared_distance_and_bandwidth(self, theta):
         """Compute the pairwise squared Euclidean distances between all of the
@@ -17,11 +15,7 @@ class AbstractKernel(object):
         supplied by the user.
         """
         sq_dists = cdist(theta, theta, metric="sqeuclidean")
-        if self.bandwidth:
-            h = self.bandwidth
-        else:
-            h = np.sqrt(0.5 * np.median(sq_dists) / np.log(theta.shape[0] + 1))
-
+        h = np.sqrt(0.5 * np.median(sq_dists) / np.log(theta.shape[0] + 1))
         return sq_dists, h
 
     @abstractmethod

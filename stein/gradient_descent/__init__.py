@@ -1,2 +1,1 @@
-from .adagrad import Adagrad
-from .adam import Adam
+from .adam_gradient_descent import AdamGradientDescent

@@ -1,74 +1,65 @@
 import numpy as np
-
-
-def compute_phi(theta, kernel, grad_log_p):
-    """Assuming a reproducing kernel Hilbert space with associated kernel, this
-    function computes the optimal perturbation in the particles under functions
-    in the unit ball under the norm of the RKHS. This perturbation can be
-    regarded as the direction that will maximally decrease the KL-divergence
-    between the empirical distribution of the particles and the target
-    distribution.
-    """
-    # Extract the number of particles and number of parameters.
-    n_particles, n_params = theta.shape
-    # Compute the kernel matrices and gradient with respect to the particles.
-    K, dK = kernel.kernel_and_grad(theta)
-    # Compute the gradient of the logarithm of the target density.
-    g = np.zeros((n_particles, n_params))
-    for i in range(n_particles):
-        g[i] = grad_log_p(theta[i])
-
-    return (K.dot(g) + dK) / n_particles
+import tensorflow as tf
+from .kernels import SquaredExponentialKernel
+from .utilities import convert_array_to_dictionary, convert_dictionary_to_array
 
 
 class SteinSampler(object):
     """Stein Sampler Class"""
-    def __init__(
-            self,
-            grad_log_p,
-            kernel,
-            gd,
-            evaluator=None,
-            verbose=True
-    ):
-        """Initialize parameters of the Stein sampler."""
-        self.grad_log_p = grad_log_p
-        self.kernel = kernel
+    def __init__(self, n_particles, log_p, gd, theta=None):
+        """Initialize the parameters of the Stein sampler object."""
+        self.n_particles = n_particles
+        self.kernel = SquaredExponentialKernel()
         self.gd = gd
-        self.evaluator = evaluator
-        self.verbose = verbose
-
-    def sample(
-            self,
-            n_particles,
-            n_iters,
-            theta_init=None
-    ):
-        """Use Stein variational gradient descent to sample from the target
-        distribution by iteratively perturbing a specified number of points so
-        that they are maximally close to the target.
-        """
-        # Number of iterations after which to provide an update, if required.
-        n_prog = n_iters // 10
-        # Randomly initialize a set of theta which are the particles to
-        # transform so that they resemble a random sample from the target
-        # distribution.
-        if theta_init is not None:
-            theta = theta_init
+        self.log_p = log_p
+        self.sess = tf.Session()
+        self.model_vars = tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES, "model"
+        )
+        self.grad_log_p = tf.gradients(self.log_p, self.model_vars)
+        self.sess.run(tf.global_variables_initializer())
+        if theta is not None:
+            self.theta = theta
         else:
-            theta = np.random.normal(size=(n_particles, self.kernel.n_params))
+            self.theta = {
+                v: np.random.normal(
+                    size=[self.n_particles] + v.get_shape().as_list()
+                )
+                for v in self.model_vars
+            }
 
-        # Perform Stein variational gradient descent.
-        for i in range(n_iters):
-            # Compute the optimal perturbation.
-            theta += self.gd.update(
-                compute_phi(theta, self.kernel, self.grad_log_p)
-            )
+    def compute_phi(self, theta_array, grads_array):
+        """Assuming a reproducing kernel Hilbert space with associated kernel,
+        this function computes the optimal perturbation in the particles under
+        functions in the unit ball under the norm of the RKHS. This perturbation
+        can be regarded as the direction that will maximally decrease the
+        KL-divergence between the empirical distribution of the particles and
+        the target distribution.
+        """
+        # Extract the number of particles and number of parameters.
+        n_particles, n_params = grads_array.shape
+        # Compute the kernel matrices and gradient with respect to the
+        # particles.
+        K, dK = self.kernel.kernel_and_grad(theta_array)
 
-            # Print out diagnostics.
-            if i % n_prog == 0 and self.verbose:
-                print("Iteration:\t{} / {}".format(i, n_iters))
-            if i % n_prog == 0 and self.evaluator is not None:
-                print("Metric:\t{}".format(self.evaluator(theta)))
+        return (K.dot(grads_array) + dK) / n_particles
 
-        return theta
+    def train_on_batch(self, batch_feed):
+        """"""
+        grads = {
+                v: np.zeros([self.n_particles] + v.get_shape().as_list())
+                for v in self.model_vars            
+        }
+        for i in range(self.n_particles):
+            # Check out this cool syntax for merging two dictionaries. :)
+            theta_feed = {v: self.theta[v][i] for v in self.model_vars}
+            grad = self.sess.run(self.grad_log_p, {**batch_feed, **theta_feed})
+            for v, g in zip(self.model_vars, grad):
+                grads[v][i] = g
+
+        grads_array, access_indices = convert_dictionary_to_array(grads)
+        theta_array, _ = convert_dictionary_to_array(self.theta)
+        phi = self.compute_phi(theta_array, grads_array)
+        theta_array += self.gd.update(phi)
+        self.theta = convert_array_to_dictionary(theta_array, access_indices)
+
