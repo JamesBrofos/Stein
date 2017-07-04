@@ -11,7 +11,7 @@ np.random.seed(0)
 tf.set_random_seed(1)
 
 # Generate random data from a logistic regression model.
-n_samples, n_feats = 100, 1
+n_samples, n_feats = 50, 1
 data_X = np.random.normal(size=(n_samples, n_feats))
 data_w = np.random.normal(scale=3., size=(n_feats, 1))
 data_p = 1. / (1. + np.exp(-data_X.dot(data_w)))
