@@ -8,10 +8,10 @@ from stein.gradient_descent import AdamGradientDescent
 
 # For reproducibility.
 np.random.seed(0)
-tf.set_random_seed(1)
+tf.set_random_seed(0)
 
 # Generate random data from a logistic regression model.
-n_samples, n_feats = 50, 1
+n_samples, n_feats = 1000, 1
 data_X = np.random.normal(size=(n_samples, n_feats))
 data_w = np.random.normal(scale=3., size=(n_feats, 1))
 data_p = 1. / (1. + np.exp(-data_X.dot(data_w)))
@@ -28,7 +28,10 @@ with tf.variable_scope("model"):
     model_alpha = tf.exp(model_log_alpha)
     # Compute prior.
     with tf.variable_scope("priors"):
-        w_prior = Normal(loc=tf.zeros([n_feats, 1]), scale=model_alpha)
+        w_prior = Normal(
+            tf.zeros([n_feats, 1]),
+            tf.reciprocal(tf.sqrt(model_alpha))
+        )
         alpha_prior = Gamma(concentration=1., rate=0.01)
     # Compute the likelihood function.
     with tf.variable_scope("likelihood"):
@@ -39,7 +42,9 @@ with tf.variable_scope("model"):
     # Compute the gradient of the log-posterior with respect to the model linear
     # coefficients.
     log_p = (
-        log_l + w_prior.log_prob(model_w) + alpha_prior.log_prob(model_alpha)
+        log_l +
+        tf.reduce_sum(w_prior.log_prob(model_w)) +
+        alpha_prior.log_prob(model_alpha)
     )
 
 
@@ -50,19 +55,21 @@ n_prog = n_iters // 10
 n_particles = 50
 gd = AdamGradientDescent(learning_rate=1e-1)
 sampler = SteinSampler(n_particles, log_p, gd)
+# Perform learning iterations.
 for i in range(n_iters):
     if i % n_prog == 0:
-        print(i)
+        print("Iteration: {} / {}".format(i, n_iters))
     sampler.train_on_batch({model_X: data_X, model_y: data_y})
 
 
-X_plot = np.atleast_2d(np.linspace(-3., 3., num=100)).T
-plt.plot(data_X.ravel(), data_y.ravel(), "r.")
-for i in range(n_particles):
-    p_plot = 1. / (1. + np.exp(-X_plot.dot(sampler.theta[model_w][i])))
-    plt.plot(X_plot.ravel(), p_plot.ravel(), "g-", alpha=0.1)
-
-p = 1. / (1. + np.exp(-X_plot.dot(data_w)))
-plt.plot(X_plot.ravel(), p.ravel(), "b-", linewidth=2.)
-plt.grid()
-plt.show()
+# Visualize if there is only a single dimension.
+if n_feats == 1:
+    X_plot = np.atleast_2d(np.linspace(-3., 3., num=100)).T
+    plt.plot(data_X.ravel(), data_y.ravel(), "r.")
+    for i in range(n_particles):
+        p_plot = 1. / (1. + np.exp(-X_plot.dot(sampler.theta[model_w][i])))
+        plt.plot(X_plot.ravel(), p_plot.ravel(), "g-", alpha=0.1)
+    p = 1. / (1. + np.exp(-X_plot.dot(data_w)))
+    plt.plot(X_plot.ravel(), p.ravel(), "b-", linewidth=2.)
+    plt.grid()
+    plt.show()

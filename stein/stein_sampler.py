@@ -156,9 +156,12 @@ class SteinSampler(object):
 
         # Convert both the particle dictionary and the gradient dictionary into
         # vector representations.
+        # Bundles :)
         theta_array, access_indices = convert_dictionary_to_array(self.theta)
         grads_array, _ = convert_dictionary_to_array(grads)
         # Compute optimal update direction.
         phi = self.compute_phi(theta_array, grads_array)
+        # Normalize the gradient have be norm no larger than the desired amount.
+        phi *= 10. / max(10., np.linalg.norm(phi))
         theta_array += self.gd.update(phi)
         self.theta = convert_array_to_dictionary(theta_array, access_indices)
