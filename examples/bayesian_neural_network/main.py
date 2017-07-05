@@ -13,8 +13,8 @@ if True:
     np.random.seed(seed)
 
 # Import data.
-# data = np.loadtxt("./data/boston_housing.txt")
-data = np.loadtxt("./data/concrete.txt")
+dataset = "./data/boston_housing.txt"
+data = np.loadtxt(dataset)
 # Extract the target variable and explanatory features.
 data_X = data[:, :-1]
 data_y = data[:, -1:]
