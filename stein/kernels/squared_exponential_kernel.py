@@ -4,11 +4,11 @@ from .abstract_kernel import AbstractKernel
 
 class SquaredExponentialKernel(AbstractKernel):
     """Squared Exponential Kernel Class"""
+
     def kernel_and_grad(self, theta):
         """Implementation of abstract base class method."""
         # Number of particles used to sample from the distribution.
         n_particles, n_params = theta.shape
-        assert n_params == self.n_params
         # Compute the pairwise squared Euclidean distances between all of the
         # particles and the bandwidth. This allows us to compute the kernel
         # matrix.
