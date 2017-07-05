@@ -8,7 +8,6 @@ from stein.gradient_descent import AdamGradientDescent
 
 # For reproducibility.
 np.random.seed(0)
-tf.set_random_seed(0)
 
 # Generate random data from a logistic regression model.
 n_samples, n_feats = 1000, 1

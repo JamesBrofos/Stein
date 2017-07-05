@@ -9,13 +9,12 @@ from stein.gradient_descent import AdamGradientDescent
 
 # For reproducibility.
 if True:
-    seed = 12
+    seed = 1
     np.random.seed(seed)
-    tf.set_random_seed(seed)
-    random.seed(seed)
 
 # Import data.
-data = np.loadtxt('./data/boston_housing')
+# data = np.loadtxt("./data/boston_housing.txt")
+data = np.loadtxt("./data/concrete.txt")
 # Extract the target variable and explanatory features.
 data_X = data[:, :-1]
 data_y = data[:, -1:]
@@ -107,7 +106,7 @@ with tf.variable_scope("model"):
         tf.reduce_sum(prior_w_2.log_prob(model_w_2)) +
         tf.reduce_sum(prior_b_1.log_prob(model_b_1)) +
         prior_b_2.log_prob(model_b_2)
-    )
+    ) / n_train
 
 # Initialize the dictionary of parameters.
 theta = {
@@ -131,7 +130,7 @@ with tf.Session() as sess:
     for i in range(n_particles):
         current_theta = {v: x[i] for v, x in theta.items()}
         y_hat = sess.run(pred, {**data_feed, **current_theta}).ravel()
-        theta[model_log_gamma][i] = np.log(
+        theta[model_log_gamma][i] = -np.log(
             np.mean((y_train.ravel() - y_hat)**2)
         )
 
