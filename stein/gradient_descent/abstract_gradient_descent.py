@@ -10,7 +10,7 @@ class AbstractGradientDescent(object):
     implemented by classes inheriting from the abstract gradient descent class.
     The global learning rate is set in the initialization method.
     """
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, decay):
         """Initialize the parameters of the abstract gradient descent object.
 
         Parameters:
@@ -20,8 +20,13 @@ class AbstractGradientDescent(object):
                 For simple models such as logistic regression, this value can be
                 set relatively large (e.g. 1e-1), but must be small (e.g. 1e-4)
                 for complex models such as neural networks.
+            decay (float): The learning rate decay parameter. After each
+                gradient descent update, the learning rate is multiplied by this
+                amount; this is done to guarantee convergence of the learning
+                algorithm.
         """
         self.learning_rate = learning_rate
+        self.decay = decay
         self.n_iters = 0
 
     @abstractmethod

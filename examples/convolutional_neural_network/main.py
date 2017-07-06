@@ -129,7 +129,7 @@ theta = {
 }
 
 # Sample from the posterior using Stein variational gradient descent.
-gd = AdamGradientDescent(learning_rate=1e-2)
+gd = AdamGradientDescent(learning_rate=1e-2, decay=0.999)
 sampler = SteinSampler(n_particles, log_p, gd)
 # Perform learning iterations.
 current_iter = 0

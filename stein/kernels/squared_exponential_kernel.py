@@ -3,8 +3,17 @@ from .abstract_kernel import AbstractKernel
 
 
 class SquaredExponentialKernel(AbstractKernel):
-    """Squared Exponential Kernel Class"""
+    """Squared Exponential Kernel Class
 
+    The squared exponential kernel (also called a Gaussian kernel or a radial
+    basis function kernel) is implemented in this class. Notice that we use a
+    constant bandwidth across every dimension of the input, yielding an
+    isotropic kernel.
+
+    The squared exponential kernel computes the squared Euclidean distances
+    between particles, scales them by the squared bandwidth, and then
+    exponentiates that value.
+    """
     def kernel_and_grad(self, theta):
         """Implementation of abstract base class method."""
         # Number of particles used to sample from the distribution.

@@ -12,16 +12,20 @@ class AdamGradientDescent(AbstractGradientDescent):
     exponentially weighted average of previous gradients as well as squared
     gradients.
     """
-    def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999):
+    def __init__(self, learning_rate=1e-3, decay=1., beta_1=0.9, beta_2=0.999):
         """Initialize the parameters of the Adam gradient descent object.
 
         Parameters:
-            learning_rate (float): A global step size parameter used for every
-                gradient descent class. This determines the global magnitude of
-                a gradient descent step by scaling the gradient by this value.
-                For simple models such as logistic regression, this value can be
-                set relatively large (e.g. 1e-1), but must be small (e.g. 1e-4)
-                for complex models such as neural networks.
+            learning_rate (float, optional): A global step size parameter used
+                for every gradient descent class. This determines the global
+                magnitude of a gradient descent step by scaling the gradient by
+                this value. For simple models such as logistic regression, this
+                value can be set relatively large (e.g. 1e-1), but must be small
+                (e.g. 1e-4) for complex models such as neural networks.
+            decay (float, optional): The learning rate decay parameter. After
+                each gradient descent update, the learning rate is multiplied by
+                this amount; this is done to guarantee convergence of the
+                learning algorithm.
             beta_1 (float, optional): The control parameter for how much to
                 decay previous gradients when computing the weighted average of
                 the current gradient and the previous gradients.
@@ -30,7 +34,7 @@ class AdamGradientDescent(AbstractGradientDescent):
                 average of the current squared gradient and the previous squared
                 gradients.
         """
-        super(AdamGradientDescent, self).__init__(learning_rate)
+        super(AdamGradientDescent, self).__init__(learning_rate, decay)
         self.beta_1 = beta_1
         self.beta_2 = beta_2
 
@@ -48,5 +52,7 @@ class AdamGradientDescent(AbstractGradientDescent):
         self.n_iters += 1
         mup = self.mu / (1. - self.beta_1**self.n_iters)
         nup = self.nu / (1. - self.beta_2**self.n_iters)
+        grad = mup / (1e-8 + np.sqrt(nup)) * self.learning_rate
+        self.learning_rate *= self.decay
 
-        return mup / (1e-8 + np.sqrt(nup)) * self.learning_rate
+        return grad
