@@ -34,7 +34,12 @@ class AbstractKernel(object):
                 variational gradient descent paper).
         """
         sq_dists = cdist(theta, theta, metric="sqeuclidean")
-        h = np.sqrt(0.5 * np.median(sq_dists) / np.log(theta.shape[0] + 1))
+        # Account for the possibility that there is only a single particle.
+        if theta.shape[0] == 1:
+            h = 1.
+        else:
+            h = np.sqrt(0.5 * np.median(sq_dists) / np.log(theta.shape[0] + 1))
+
         return sq_dists, h
 
     @abstractmethod

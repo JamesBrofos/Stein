@@ -101,7 +101,7 @@ with tf.variable_scope("model"):
         # Variance priors.
         prior_gamma.log_prob(model_gamma) +
         prior_lambda.log_prob(model_lambda) +
-        # # Weight and bias priors.
+        # Weight and bias priors.
         tf.reduce_sum(prior_w_1.log_prob(model_w_1)) +
         tf.reduce_sum(prior_w_2.log_prob(model_w_2)) +
         tf.reduce_sum(prior_b_1.log_prob(model_b_1)) +

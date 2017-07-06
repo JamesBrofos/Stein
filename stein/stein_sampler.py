@@ -142,8 +142,8 @@ class SteinSampler(object):
         # Initialize a dictionary to store the gradient with respect to each
         # constituent parameter of the particle.
         grads = {
-                v: np.zeros([self.n_particles] + v.get_shape().as_list())
-                for v in self.model_vars
+            v: np.zeros([self.n_particles] + v.get_shape().as_list())
+            for v in self.model_vars
         }
         # Iterate over particles and compute the gradient.
         for i in range(self.n_particles):
@@ -157,8 +157,10 @@ class SteinSampler(object):
         # Convert both the particle dictionary and the gradient dictionary into
         # vector representations.
         # Bundles :)
-        theta_array, access_indices = convert_dictionary_to_array(self.theta)
-        grads_array, _ = convert_dictionary_to_array(grads)
+        theta_array, access_indices = convert_dictionary_to_array(
+            self.theta, self.model_vars
+        )
+        grads_array, _ = convert_dictionary_to_array(grads, self.model_vars)
         # Compute optimal update direction.
         phi = self.compute_phi(theta_array, grads_array)
         # Normalize the gradient have be norm no larger than the desired amount.

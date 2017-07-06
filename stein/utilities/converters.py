@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def convert_dictionary_to_array(dictionary):
+def convert_dictionary_to_array(dictionary, variables):
     """This method takes a dictionary mapping TensorFlow variables to a matrix
     where each row corresponds to a particle and each column is a value of a
     parameter for that variable. This method returns a tuple consisting of a
@@ -10,10 +10,22 @@ def convert_dictionary_to_array(dictionary):
     information on how to extract the parameters corresponding to a particular
     variable from the matrix.
 
+    TODO: Right now, this function takes a list of variables to ensure
+    consistency in the way that arrays are created across multiple calls. But
+    the entries of the `variables` input should be the same as the keys of the
+    `dictionary` input; hence, there is some redundancy. Will Python3.6 and the
+    change to dictionaries make this extra argument obsolete?
+
     Parameters:
         dictionary (dict): A dictionary mapping TensorFlow variables to matrices
             where each row is a particle and each column is a parameter for that
             variable.
+        variables (list): A list of TensorFlow variables. Note that we are
+            passing this in as a second argument to ensure consistency when
+            deriving the order in which variables are accessed in the numpy
+            array. Otherwise, there may be a chance that the variables are
+            incorrectly ordered across the variables array and the gradient
+            array.
 
     Returns:
         Tuple: The first element of the tuple is the matrix representation of
@@ -35,7 +47,9 @@ def convert_dictionary_to_array(dictionary):
     access_indices = {}
     index = 0
     # Iterate over each of the variables.
-    for v, value in dictionary.items():
+    for v in variables:
+        # Extract the corresponding value from the dictionary.
+        value = dictionary[v]
         # Compute the number of parameters in each variable. This is the product
         # of the individual dimensions of that variable (excluding the first
         # which is just the number of particles).
