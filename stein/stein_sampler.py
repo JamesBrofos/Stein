@@ -147,9 +147,12 @@ class SteinSampler(object):
         }
         # Iterate over particles and compute the gradient.
         for i in range(self.n_particles):
-            # Check out this cool syntax for merging two dictionaries. :)
+            # Combine the parameter feed dictionary with the data feed
+            # dictionary. Unlike previous versions, this uses backwards
+            # compatible code.
             theta_feed = {v: self.theta[v][i] for v in self.model_vars}
-            grad = self.sess.run(self.grad_log_p, {**batch_feed, **theta_feed})
+            theta_feed.update(batch_feed)
+            grad = self.sess.run(self.grad_log_p, theta_feed)
             # Update the parameters of the current particle.
             for v, g in zip(self.model_vars, grad):
                 grads[v][i] = g

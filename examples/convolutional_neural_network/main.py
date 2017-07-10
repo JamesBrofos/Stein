@@ -100,18 +100,28 @@ with tf.variable_scope("model"):
         tf.reduce_sum(prior_b_2.log_prob(model_b_2))
     )
 
-# Create a function to measure accuracy.
 def evaluation(sampler, data_feed):
     """Compute the test set accuracy of the Bayesian convolutional neural
     network algorithm using the posterior samples of the weights and biases.
     Notice that we average logits over each particle and then compute the index
     of the maximum.
+
+    Parameters:
+        sampler (SteinSampler): The Stein sampler containing the learned
+            particles from Stein variational gradient descent.
+        data_feed (dict): A dictionary mapping the TensorFlow data placeholders
+            to the evaluation data.
+
+    Returns:
+        Float: The accuracy of the Bayesian ensemble of convolutional neural
+            networks on the evaluation dataset.
     """
     # Construct a vector to hold the logits for each sampled particle.
     P = np.zeros([n_particles, data_feed[model_y].shape[0], 10])
     for i in range(n_particles):
         feed = {v: x[i] for v, x in sampler.theta.items()}
-        P[i] = sampler.sess.run(logits, {**feed, **data_feed})
+        feed.update(data_feed)
+        P[i] = sampler.sess.run(logits, feed)
 
     a = np.mean(np.argmax(P.mean(axis=0), 1) == np.argmax(data_feed[model_y], 1))
     return a

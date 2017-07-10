@@ -147,10 +147,9 @@ def evaluate(sampler, data_feed):
     # the predictions of each constituent particle.
     for i in range(n_particles):
         feed = {v: x[i] for v, x in sampler.theta.items()}
+        feed.update(data_feed)
         y_test_pred[i] = (
-            sampler.sess.run(
-                pred, {**feed, **data_feed}
-            ) * y_train_std + y_train_mean
+            sampler.sess.run(pred, feed) * y_train_std + y_train_mean
         ).ravel()
 
     # Average predictions across particles.
