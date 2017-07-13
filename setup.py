@@ -30,7 +30,7 @@ setup(
     author="James Brofos",
     author_email="james@brofos.org",
     description=" A library for general Bayesian inference using Stein variational gradient descent.",
-    license="Copyright (c) James Brofos 2017",
+    license="Copyright (c) The MITRE Corporation 2017",
     packages=find_packages(exclude="tests"),
     long_description=read("README.md"),
     cmdclass={
