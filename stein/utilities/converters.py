@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def convert_dictionary_to_array(dictionary, variables):
+def convert_dictionary_to_array(dictionary):
     """This method takes a dictionary mapping TensorFlow variables to a matrix
     where each row corresponds to a particle and each column is a value of a
     parameter for that variable. This method returns a tuple consisting of a
@@ -10,22 +10,10 @@ def convert_dictionary_to_array(dictionary, variables):
     information on how to extract the parameters corresponding to a particular
     variable from the matrix.
 
-    TODO: Right now, this function takes a list of variables to ensure
-    consistency in the way that arrays are created across multiple calls. But
-    the entries of the `variables` input should be the same as the keys of the
-    `dictionary` input; hence, there is some redundancy. Will Python3.6 and the
-    change to dictionaries make this extra argument obsolete?
-
     Parameters:
         dictionary (dict): A dictionary mapping TensorFlow variables to matrices
             where each row is a particle and each column is a parameter for that
             variable.
-        variables (list): A list of TensorFlow variables. Note that we are
-            passing this in as a second argument to ensure consistency when
-            deriving the order in which variables are accessed in the numpy
-            array. Otherwise, there may be a chance that the variables are
-            incorrectly ordered across the variables array and the gradient
-            array.
 
     Returns:
         Tuple: The first element of the tuple is the matrix representation of
@@ -46,6 +34,12 @@ def convert_dictionary_to_array(dictionary, variables):
     # to be used for accessing a given variable.
     access_indices = {}
     index = 0
+    # Here we sort the TensorFlow variables that represent the keys to the
+    # dictionary. This ensures consistency in the way that the gradients and
+    # parameters are stored.
+    variables = [v for v in dictionary]
+    variables.sort(key=lambda x: x.name)
+
     # Iterate over each of the variables.
     for v in variables:
         # Extract the corresponding value from the dictionary.
@@ -62,6 +56,7 @@ def convert_dictionary_to_array(dictionary, variables):
         index += dim
 
     return array, access_indices
+
 
 def convert_array_to_dictionary(array, access_indices):
     """This method takes a matrix representation of the variables in a model and
