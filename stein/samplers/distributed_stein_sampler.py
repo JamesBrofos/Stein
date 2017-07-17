@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from mpi4py import MPI
 from .abstract_stein_sampler import AbstractSteinSampler
+from ..utilities import convert_dictionary_to_array
 
 
 class DistributedSteinSampler(AbstractSteinSampler):
@@ -38,19 +39,15 @@ class DistributedSteinSampler(AbstractSteinSampler):
 
             # Initialize a dictionary to store the gradient with respect to each
             # constituent parameter of the particle.
-            grads = {
-                v: np.zeros([self.n_particles] + v.get_shape().as_list())
-                for v in self.model_vars
-            }
+            n_params = int(sum([
+                np.prod(v.get_shape().as_list()) for v in self.model_vars
+            ]))
+            grads = np.empty((self.n_particles, n_params))
             for i in range(self.n_particles):
-                if False:
-                    s = MPI.Status()
-                    grad_dict = self.comm.recv(source=MPI.ANY_SOURCE, status=s)
-                else:
-                    grad_dict = self.comm.recv(source=i+1)
-                for v, g in grad_dict.items():
-                    var = next((x for x in self.model_vars if x.name == v), None)
-                    grads[var][i] = g
+                s = MPI.Status()
+                g = np.empty(n_params)
+                self.comm.Recv([g, MPI.FLOAT], source=MPI.ANY_SOURCE, status=s)
+                grads[s.source-1] = g
 
             # Apply the optimal perturbation direction.
             self.update_particles(grads)
@@ -70,6 +67,10 @@ class DistributedSteinSampler(AbstractSteinSampler):
             # Compute the gradient of the log-posterior with respect to the
             # model parameters.
             grad = self.sess.run(self.grad_log_p, theta_feed)
-            grad_dict = {v.name: g for v, g in zip(self.model_vars, grad)}
+            # grad_dict = {v.name: g for v, g in zip(self.model_vars, grad)}
+            grad_array = convert_dictionary_to_array(
+                {v: np.expand_dims(g, 0) for v, g in zip(self.model_vars, grad)}
+            )[0].ravel()
+            # print(grad_array.shape)
             # Send the gradient back to the master node.
-            self.comm.send(grad_dict, dest=0)
+            self.comm.Send([grad_array, MPI.FLOAT], dest=0)

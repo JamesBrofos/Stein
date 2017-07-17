@@ -126,13 +126,19 @@ class AbstractSteinSampler(object):
         `compute_phi`.
 
         Parameters:
-            grads (dict): A dictionary mapping TensorFlow model variables to the
-                gradient of the log-posterior.
+            grads (dict or numpy array): A dictionary mapping TensorFlow model
+                variables to the gradient of the log-posterior. This can also be
+                a numpy array if conversion from a dictionary to an array is not
+                required. This is determined by checking whether or not the
+                passed input has a dictionary type.
         """
         # Convert both the particle dictionary and the gradient dictionary into
         # vector representations.
         theta_array, access_indices = convert_dictionary_to_array(self.theta)
-        grads_array, _ = convert_dictionary_to_array(grads)
+        if isinstance(grads, dict):
+            grads_array, _ = convert_dictionary_to_array(grads)
+        else:
+            grads_array = grads
         # Compute optimal update direction.
         phi = self.compute_phi(theta_array, grads_array)
         # Normalize the gradient have be norm no larger than the desired amount.
