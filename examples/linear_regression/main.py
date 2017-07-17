@@ -1,16 +1,21 @@
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
-from tensorflow.contrib.distributions import Normal, Gamma
-from stein import SteinSampler
+import os
+from tensorflow.contrib.distributions import Normal
+from mpi4py import MPI
 from stein.gradient_descent import AdamGradientDescent
+from stein.samplers import DistributedSteinSampler
 
 
 # For reproducibility.
 np.random.seed(0)
 
-# Generate random data from a logistic regression model.
-n_samples, n_feats = 1000, 1
+# TensorFlow logging level.
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+# Create the distribution communications controller.
+comm = MPI.COMM_WORLD
+# Number of features and number of observations.
+n_samples, n_feats = 10, 3
 data_X = np.random.normal(size=(n_samples, n_feats))
 data_w = np.random.normal(scale=3., size=(n_feats, 1))
 data_y = np.random.normal(data_X.dot(data_w), 0.1)
@@ -33,25 +38,22 @@ with tf.variable_scope("model"):
 
 # Number of learning iterations.
 n_iters = 1000
-n_prog = n_iters // 10
-# Sample from the posterior using Stein variational gradient descent.
-n_particles = 10
+
+# Interpret the number of processes as the number of particles to sample (this
+# is done for simplicity). We subtract one because we have a single master
+# process.
+n_particles = comm.size - 1
+
+# Gradient descent method for Stein variational gradient descent.
 gd = AdamGradientDescent(learning_rate=1e-1)
-sampler = SteinSampler(n_particles, log_p, gd)
-# Perform learning iterations.
+# Create sampler object that will be created for every process.
+sampler = DistributedSteinSampler(n_particles, log_p, gd)
+
+# Perform Stein variational gradient descent iterations.
 for i in range(n_iters):
-    if i % n_prog == 0:
-        print("Iteration: {} / {}".format(i, n_iters))
     sampler.train_on_batch({model_X: data_X, model_y: data_y})
 
-# Visualize if there is only a single dimension.
-if n_feats == 1:
-    X_plot = np.atleast_2d(np.linspace(-3., 3., num=100)).T
-    plt.plot(data_X.ravel(), data_y.ravel(), "r.")
-    for i in range(n_particles):
-        y_plot = X_plot.dot(sampler.theta[model_w][i])
-        plt.plot(X_plot.ravel(), y_plot.ravel(), "g-", alpha=0.5)
-    y = X_plot.dot(data_w)
-    plt.plot(X_plot.ravel(), y.ravel(), "b-", linewidth=2.)
-    plt.grid()
-    plt.show()
+if comm.rank == 0:
+    est = np.array(list(sampler.theta.values()))[0].mean(axis=0).ravel()
+    print("True coefficients: {}".format(data_w.ravel()))
+    print("Est. coefficients: {}".format(est))

@@ -1,11 +1,12 @@
-import numpy as np
 import tensorflow as tf
-from .kernels import SquaredExponentialKernel
-from .utilities import convert_array_to_dictionary, convert_dictionary_to_array
+import numpy as np
+from abc import ABCMeta, abstractmethod
+from ..kernels import SquaredExponentialKernel
+from ..utilities import convert_array_to_dictionary, convert_dictionary_to_array
 
 
-class SteinSampler(object):
-    """Stein Sampler Class
+class AbstractSteinSampler(object):
+    """Abstract Stein Sampler Class
 
     This class implements the algorithm from the paper "Stein Variational
     Gradient Descent: A General Purpose Bayesian Inference Algorithm" by Liu and
@@ -24,7 +25,7 @@ class SteinSampler(object):
     within a reproducing kernel Hilbert space (RKHS).
     """
     def __init__(self, n_particles, log_p, gd, theta=None):
-        """Initialize the parameters of the Stein sampler object.
+        """Initialize the parameters of the abstract Stein sampler object.
 
         Parameters:
             n_particles (int): The number of particles to use in the algorithm.
@@ -116,6 +117,30 @@ class SteinSampler(object):
 
         return (K.dot(grads_array) + dK) / n_particles
 
+    def update_particles(self, grads):
+        """Internal method that computes the optimal perturbation direction
+        given the current set of particles and the gradient of the
+        log-posterior. Notice that this method applies the gradient descent
+        update and normalizes the gradient to have a given norm. Computation of
+        the optimal perturbation direction is broken out into the method
+        `compute_phi`.
+
+        Parameters:
+            grads (dict): A dictionary mapping TensorFlow model variables to the
+                gradient of the log-posterior.
+        """
+        # Convert both the particle dictionary and the gradient dictionary into
+        # vector representations.
+        theta_array, access_indices = convert_dictionary_to_array(self.theta)
+        grads_array, _ = convert_dictionary_to_array(grads)
+        # Compute optimal update direction.
+        phi = self.compute_phi(theta_array, grads_array)
+        # Normalize the gradient have be norm no larger than the desired amount.
+        phi *= 10. / max(10., np.linalg.norm(phi))
+        theta_array += self.gd.update(phi)
+        self.theta = convert_array_to_dictionary(theta_array, access_indices)
+
+    @abstractmethod
     def train_on_batch(self, batch_feed):
         """Trains the Stein variational gradient descent algorithm on a given
         batch of data (provided in the form of a TensorFlow feed dictionary).
@@ -139,32 +164,7 @@ class SteinSampler(object):
                 dictionary will be internally augmented to include the current
                 feed values for the model parameters for each particle.
         """
-        # Initialize a dictionary to store the gradient with respect to each
-        # constituent parameter of the particle.
-        grads = {
-            v: np.zeros([self.n_particles] + v.get_shape().as_list())
-            for v in self.model_vars
-        }
-        # Iterate over particles and compute the gradient.
-        for i in range(self.n_particles):
-            # Combine the parameter feed dictionary with the data feed
-            # dictionary. Unlike previous versions, this uses backwards
-            # compatible code.
-            theta_feed = {v: self.theta[v][i] for v in self.model_vars}
-            theta_feed.update(batch_feed)
-            grad = self.sess.run(self.grad_log_p, theta_feed)
-            # Update the parameters of the current particle.
-            for v, g in zip(self.model_vars, grad):
-                grads[v][i] = g
+        raise NotImplementedError()
 
-        # Convert both the particle dictionary and the gradient dictionary into
-        # vector representations.
-        # Bundles :)
-        theta_array, access_indices = convert_dictionary_to_array(self.theta)
-        grads_array, _ = convert_dictionary_to_array(grads)
-        # Compute optimal update direction.
-        phi = self.compute_phi(theta_array, grads_array)
-        # Normalize the gradient have be norm no larger than the desired amount.
-        phi *= 10. / max(10., np.linalg.norm(phi))
-        theta_array += self.gd.update(phi)
-        self.theta = convert_array_to_dictionary(theta_array, access_indices)
+
+
