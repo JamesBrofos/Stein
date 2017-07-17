@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import os
+from time import time
 from tensorflow.contrib.distributions import Normal
 from mpi4py import MPI
 from stein.gradient_descent import AdamGradientDescent
@@ -12,13 +13,16 @@ np.random.seed(0)
 
 # TensorFlow logging level.
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-# Create the distribution communications controller.
+# Create the distributed communications controller.
 comm = MPI.COMM_WORLD
-# Number of features and number of observations.
-n_samples, n_feats = 10, 3
-data_X = np.random.normal(size=(n_samples, n_feats))
-data_w = np.random.normal(scale=3., size=(n_feats, 1))
-data_y = np.random.normal(data_X.dot(data_w), 0.1)
+
+# Keep track of time elapsed.
+start = time()
+# Import data.
+data_X = np.loadtxt("../data/data_X.csv", delimiter=",")
+data_w = np.atleast_2d(np.loadtxt("../data/data_w.csv", delimiter=",")).T
+data_y = np.atleast_2d(np.loadtxt("../data/data_y.csv", delimiter=",")).T
+n_samples, n_feats = data_X.shape
 
 with tf.variable_scope("model"):
     # Placeholders for features and targets.
@@ -39,21 +43,18 @@ with tf.variable_scope("model"):
 # Number of learning iterations.
 n_iters = 1000
 
-# Interpret the number of processes as the number of particles to sample (this
-# is done for simplicity). We subtract one because we have a single master
-# process.
-n_particles = comm.size - 1
-
 # Gradient descent method for Stein variational gradient descent.
 gd = AdamGradientDescent(learning_rate=1e-1)
 # Create sampler object that will be created for every process.
-sampler = DistributedSteinSampler(n_particles, log_p, gd)
+sampler = DistributedSteinSampler(log_p, gd)
 
 # Perform Stein variational gradient descent iterations.
 for i in range(n_iters):
     sampler.train_on_batch({model_X: data_X, model_y: data_y})
 
+# Show diagnostics.
 if comm.rank == 0:
     est = np.array(list(sampler.theta.values()))[0].mean(axis=0).ravel()
     print("True coefficients: {}".format(data_w.ravel()))
     print("Est. coefficients: {}".format(est))
+    print("Time elapsed: {}".format(time() - start))

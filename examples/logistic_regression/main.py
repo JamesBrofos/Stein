@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.contrib.distributions import Normal, Gamma
-from stein import SteinSampler
+from stein.samplers import SteinSampler
 from stein.gradient_descent import AdamGradientDescent
 
 

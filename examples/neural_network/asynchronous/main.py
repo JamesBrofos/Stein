@@ -1,9 +1,11 @@
+import os
 import numpy as np
 import tensorflow as tf
 import random
+from mpi4py import MPI
 from tensorflow.contrib.distributions import Normal, Gamma
 from sklearn.model_selection import train_test_split
-from stein import SteinSampler
+from stein.samplers import DistributedSteinSampler
 from stein.gradient_descent import AdamGradientDescent
 
 
@@ -12,8 +14,10 @@ if True:
     seed = 1
     np.random.seed(seed)
 
+# TensorFlow logging level.
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # Import data.
-dataset = "./data/boston_housing.txt"
+dataset = "../data/boston_housing.txt"
 data = np.loadtxt(dataset)
 # Extract the target variable and explanatory features.
 data_X = data[:, :-1]
@@ -46,7 +50,7 @@ n_train, n_feats = X_train.shape
 n_hidden = 50
 n_batch = 100
 n_prog = 100
-n_particles = 20
+n_particles = MPI.COMM_WORLD.size - 1
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
@@ -129,7 +133,8 @@ with tf.Session() as sess:
     data_feed = {model_X: X_train, model_y: y_train}
     for i in range(n_particles):
         current_theta = {v: x[i] for v, x in theta.items()}
-        y_hat = sess.run(pred, {**data_feed, **current_theta}).ravel()
+        current_theta.update(data_feed)
+        y_hat = sess.run(pred, current_theta).ravel()
         theta[model_log_gamma][i] = -np.log(
             np.mean((y_train.ravel() - y_hat)**2)
         )
@@ -161,16 +166,13 @@ def evaluate(sampler, data_feed):
 
 # Gradient descent object.
 gd = AdamGradientDescent(learning_rate=1e-3)
-sampler = SteinSampler(n_particles, log_p, gd, theta)
+sampler = DistributedSteinSampler(log_p, gd, theta)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
 current_iter = 0
 while True:
-    batch = np.random.choice(n_train, n_batch, replace=False)
-    X, y = X_train[batch], y_train[batch]
-    sampler.train_on_batch({model_X: X, model_y: y})
     # Output diagnostic variables.
-    if current_iter % n_prog == 0:
+    if current_iter % n_prog == 0 and sampler.comm.rank == 0:
         rmse_train = evaluate(sampler, {
             model_X: X_train,
             model_y: y_train * y_train_std + y_train_mean
@@ -179,6 +181,10 @@ while True:
         print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
             current_iter, rmse_train, rmse_test
         ))
+    # Train on batch.
+    batch = np.random.choice(n_train, n_batch, replace=False)
+    X, y = X_train[batch], y_train[batch]
+    sampler.train_on_batch({model_X: X, model_y: y})
     # Increment the global number of learning iterations.
     current_iter += 1
 

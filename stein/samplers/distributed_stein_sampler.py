@@ -6,15 +6,18 @@ from .abstract_stein_sampler import AbstractSteinSampler
 
 class DistributedSteinSampler(AbstractSteinSampler):
     """Distributed Stein Sampler Class"""
-    def __init__(self, n_particles, log_p, gd, theta=None):
+    def __init__(self, log_p, gd, theta=None):
         """Initialize the parameters of the distributed Stein sampler object.
         """
         # Use MPI for distributed computation.
         self.comm = MPI.COMM_WORLD
         # We assign the master process to have rank zero.
         if self.comm.rank == 0:
+            # Interpret the number of processes as the number of particles to
+            # sample (this is done for simplicity). We subtract one because we
+            # have a single master process.
             super(DistributedSteinSampler, self).__init__(
-                n_particles, log_p, gd, theta
+                self.comm.size - 1, log_p, gd, theta
             )
         else:
             self.model_vars = tf.get_collection(
@@ -27,7 +30,7 @@ class DistributedSteinSampler(AbstractSteinSampler):
         """Implementation of abstract base class method."""
         if self.comm.rank == 0:
             # This is the master process. The master process is responsible for
-            # coordinating the gradient computations and combining them to 
+            # coordinating the gradient computations and combining them to
             # update the optimal perturbation direction.
             for i in range(self.n_particles):
                 param_dict = {v.name: self.theta[v][i] for v in self.model_vars}
@@ -40,11 +43,13 @@ class DistributedSteinSampler(AbstractSteinSampler):
                 for v in self.model_vars
             }
             for i in range(self.n_particles):
-                grad_dict = self.comm.recv(source=i+1)
+                if False:
+                    s = MPI.Status()
+                    grad_dict = self.comm.recv(source=MPI.ANY_SOURCE, status=s)
+                else:
+                    grad_dict = self.comm.recv(source=i+1)
                 for v, g in grad_dict.items():
                     var = next((x for x in self.model_vars if x.name == v), None)
-                    if var is None:
-                        raise ValueError("Could not find variable.")
                     grads[var][i] = g
 
             # Apply the optimal perturbation direction.
@@ -57,8 +62,6 @@ class DistributedSteinSampler(AbstractSteinSampler):
             theta_feed = {}
             for v in data:
                 var = next((x for x in self.model_vars if x.name == v), None)
-                if var is None:
-                    raise ValueError("Could not find variable.")
                 theta_feed[var] = data[v]
             # Save space by clearing out the transmitted dictionary.
             del data

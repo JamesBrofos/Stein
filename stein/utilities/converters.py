@@ -37,7 +37,8 @@ def convert_dictionary_to_array(dictionary):
     # Here we sort the TensorFlow variables that represent the keys to the
     # dictionary. This ensures consistency in the way that the gradients and
     # parameters are stored.
-    for v in sorted(dictionary, key=lambda x: x.name):
+    model_keys = sorted(list(dictionary.keys()), key=lambda x: x.name)
+    for v in model_keys:
         # Extract the corresponding value from the dictionary.
         value = dictionary[v]
         # Compute the number of parameters in each variable. This is the product
