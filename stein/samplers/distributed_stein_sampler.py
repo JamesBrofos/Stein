@@ -67,7 +67,7 @@ class DistributedSteinSampler(AbstractSteinSampler):
                 G[w[0]:w[1]] = g
 
             # Apply the optimal perturbation direction.
-            self.update_particles(grads)
+            self.update_particles(G)
         else:
             # This is the worker process. It is responsible for computing the
             # gradient of the posterior log-likelihood with respect to the model
@@ -84,11 +84,10 @@ class DistributedSteinSampler(AbstractSteinSampler):
             G = np.empty((self.particles_per_worker, self.n_params))
             for i in range(self.particles_per_worker):
                 batch_feed.update({v: theta_feed[v][i] for v in theta_feed})
-                grad = self.sess.run(self.grad_log_p, batch_feed)
-                grad_array = convert_dictionary_to_array(
-                    {v: np.expand_dims(g, 0) for v, g in zip(self.model_vars, grad)}
-                )[0].ravel()
-                G[i] = grad_array
+                g = self.sess.run(self.grad_log_p, batch_feed)
+                G[i] = convert_dictionary_to_array({
+                    v: np.expand_dims(g, 0) for v, g in zip(self.model_vars, g)
+                })[0].ravel()
 
             # Send the gradient back to the master node.
             self.comm.Send([G, MPI.FLOAT], dest=0)
