@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from time import time
 from .abstract_stein_sampler import AbstractSteinSampler
 
 

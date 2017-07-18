@@ -50,7 +50,7 @@ n_train, n_feats = X_train.shape
 n_hidden = 50
 n_batch = 100
 n_prog = 100
-n_particles = MPI.COMM_WORLD.size - 1
+n_particles = 15
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
@@ -166,7 +166,7 @@ def evaluate(sampler, data_feed):
 
 # Gradient descent object.
 gd = AdamGradientDescent(learning_rate=1e-3)
-sampler = DistributedSteinSampler(log_p, gd, theta)
+sampler = DistributedSteinSampler(n_particles, log_p, gd, theta)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
 current_iter = 0
