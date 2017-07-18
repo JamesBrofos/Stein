@@ -2,9 +2,9 @@ import os
 import numpy as np
 import tensorflow as tf
 import random
+from time import time
 from mpi4py import MPI
 from tensorflow.contrib.distributions import Normal, Gamma
-from sklearn.model_selection import train_test_split
 from stein.samplers import DistributedSteinSampler
 from stein.gradient_descent import AdamGradientDescent
 
@@ -170,22 +170,25 @@ sampler = DistributedSteinSampler(n_particles, log_p, gd, theta)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
 current_iter = 0
+start_time = time()
 while True:
+    # Increment the global number of learning iterations.
+    current_iter += 1
+    # Train on batch.
+    batch = np.random.choice(n_train, n_batch, replace=False)
+    X, y = X_train[batch], y_train[batch]
+    sampler.train_on_batch({model_X: X, model_y: y})
     # Output diagnostic variables.
     if current_iter % n_prog == 0 and sampler.comm.rank == 0:
+        elapsed_time = time() - start_time
         rmse_train = evaluate(sampler, {
             model_X: X_train,
             model_y: y_train * y_train_std + y_train_mean
         })
         rmse_test = evaluate(sampler, {model_X: X_test, model_y: y_test})
-        print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
-            current_iter, rmse_train, rmse_test
+        print("Iteration {}:\t\t{:.4f}\t\t{:.4f}\t\t{:.6f}".format(
+            current_iter, rmse_train, rmse_test, elapsed_time
         ))
-    # Train on batch.
-    batch = np.random.choice(n_train, n_batch, replace=False)
-    X, y = X_train[batch], y_train[batch]
-    sampler.train_on_batch({model_X: X, model_y: y})
-    # Increment the global number of learning iterations.
-    current_iter += 1
+        start_time = time()
 
 
