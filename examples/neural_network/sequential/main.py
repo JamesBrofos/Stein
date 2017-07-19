@@ -45,8 +45,8 @@ n_train, n_feats = X_train.shape
 # number of particles to sample from the posterior.
 n_hidden = 50
 n_batch = 100
-n_prog = 100
-n_particles = 20
+n_prog = 1
+n_particles = 30
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
@@ -161,7 +161,7 @@ def evaluate(sampler, data_feed):
     return rmse
 
 # Gradient descent object.
-gd = AdamGradientDescent(learning_rate=1e-3)
+gd = AdamGradientDescent(learning_rate=1e-1)
 sampler = SteinSampler(n_particles, log_p, gd, theta)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.

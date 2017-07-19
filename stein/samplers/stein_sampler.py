@@ -8,7 +8,9 @@ class SteinSampler(AbstractSteinSampler):
     """Stein Sampler Class
 
     This class implements a sequential version of the Stein variational gradient
-    descent algorithm that does not exploit parallelism.
+    descent algorithm that does not exploit parallelism. This means that
+    computation of the gradient is done sequentially and then a global optimal
+    perturbation is computed and applied.
     """
     def train_on_batch(self, batch_feed):
         """Implementation of abstract base class method."""
