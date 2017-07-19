@@ -117,7 +117,7 @@ class AbstractSteinSampler(object):
 
         return (K.dot(grads_array) + dK) / n_particles
 
-    def update_particles(self, grads):
+    def update_particles(self, grads_array):
         """Internal method that computes the optimal perturbation direction
         given the current set of particles and the gradient of the
         log-posterior. Notice that this method applies the gradient descent
@@ -126,19 +126,12 @@ class AbstractSteinSampler(object):
         `compute_phi`.
 
         Parameters:
-            grads (dict or numpy array): A dictionary mapping TensorFlow model
-                variables to the gradient of the log-posterior. This can also be
-                a numpy array if conversion from a dictionary to an array is not
-                required. This is determined by checking whether or not the
-                passed input has a dictionary type.
+            grads_array (numpy array): A numpy array mapping TensorFlow model
+                variables to the gradient of the log-posterior.
         """
         # Convert both the particle dictionary and the gradient dictionary into
         # vector representations.
         theta_array, access_indices = convert_dictionary_to_array(self.theta)
-        if isinstance(grads, dict):
-            grads_array, _ = convert_dictionary_to_array(grads)
-        else:
-            grads_array = grads
         # Compute optimal update direction.
         phi = self.compute_phi(theta_array, grads_array)
         # Normalize the gradient have be norm no larger than the desired amount.

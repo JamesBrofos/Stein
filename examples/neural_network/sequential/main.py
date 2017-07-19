@@ -5,7 +5,7 @@ from time import time
 from tensorflow.contrib.distributions import Normal, Gamma
 from sklearn.model_selection import train_test_split
 from stein.samplers import SteinSampler
-from stein.gradient_descent import AdamGradientDescent
+from stein.gradient_descent import AdamGradientDescent, AdagradGradientDescent
 
 
 # For reproducibility.

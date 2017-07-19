@@ -10,7 +10,7 @@ class AdamGradientDescent(AbstractGradientDescent):
     "effective learning rate" (controlled, of course, by the global step size)
     for each parameter in the model. This is accomplished by computing an
     exponentially weighted average of previous gradients as well as squared
-    gradients.
+    gradients and treating these as a normalizing factor.
     """
     def __init__(self, learning_rate=1e-3, decay=1., beta_1=0.9, beta_2=0.999):
         """Initialize the parameters of the Adam gradient descent object.

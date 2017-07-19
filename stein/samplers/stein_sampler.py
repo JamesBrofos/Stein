@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from time import time
 from .abstract_stein_sampler import AbstractSteinSampler
+from ..utilities.converters import convert_dictionary_to_array
 
 
 class SteinSampler(AbstractSteinSampler):
@@ -33,4 +34,4 @@ class SteinSampler(AbstractSteinSampler):
                 grads[v][i] = g
 
         # Apply the optimal perturbation direction.
-        self.update_particles(grads)
+        self.update_particles(convert_dictionary_to_array(grads)[0])
