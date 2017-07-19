@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.distributions import Normal, Gamma
 from tensorflow.examples.tutorials.mnist import input_data
-from stein import SteinSampler
+from stein.samplers import SteinSampler
 from stein.gradient_descent import AdamGradientDescent
 
 
@@ -125,18 +125,6 @@ def evaluation(sampler, data_feed):
 
     a = np.mean(np.argmax(P.mean(axis=0), 1) == np.argmax(data_feed[model_y], 1))
     return a
-
-# Initialize the parameters of the Bayesian convolutional neural network.
-theta = {
-    model_W_conv_1: 0.1 * np.random.randn(n_particles, 8, 8, 1, 16),
-    model_W_conv_2: 0.1 * np.random.randn(n_particles, 4, 4, 16, 32),
-    model_b_conv_1: np.zeros((n_particles, 16)) + 0.1,
-    model_b_conv_2: np.zeros((n_particles, 32)) + 0.1,
-    model_W_1: 0.1 * np.random.randn(n_particles, 4*4*32, 1024),
-    model_W_2: 0.1 * np.random.randn(n_particles, 1024, 10),
-    model_b_1: np.zeros((n_particles, 1024)) + 0.1,
-    model_b_2: np.zeros((n_particles, 10)) + 0.1
-}
 
 # Sample from the posterior using Stein variational gradient descent.
 gd = AdamGradientDescent(learning_rate=1e-2, decay=0.999)
