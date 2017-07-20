@@ -1,2 +1,3 @@
 from .stein_sampler import SteinSampler
 from .distributed_stein_sampler import DistributedSteinSampler
+from .parallel_stein_sampler import ParallelSteinSampler

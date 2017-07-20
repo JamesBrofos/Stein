@@ -61,8 +61,7 @@ class DistributedSteinSampler(AbstractSteinSampler):
             self.sess = tf.Session()
             self.tf_variables = {v.name: v for v in self.model_vars}
 
-        # Initialize a dictionary to store the gradient with respect to each
-        # constituent parameter of the particle.
+        # Compute shared parameters across all processes.
         self.n_params = int(sum([
             np.prod(v.get_shape().as_list()) for v in self.model_vars
         ]))
