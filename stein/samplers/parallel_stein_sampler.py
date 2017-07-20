@@ -10,11 +10,14 @@ class ParallelSteinSampler(AbstractSteinSampler):
     """Parallel Stein Sampler Class
     """
     def __init__(self, n_particles, log_p, gd, theta=None):
+        """Initialize the parameters of the parallel Stein sampler object.
+        """
         # Use MPI for communication between parallel samplers.
         self.comm = MPI.COMM_WORLD
+        self.n_particles = n_particles
         self.n_workers = self.comm.size
         self.particles_per_worker = n_particles // self.n_workers
-        if n_particles % self.n_workers != 0 and self.comm.rank == 0:
+        if self.n_particles % self.n_workers != 0 and self.comm.rank == 0:
             raise ValueError(
                 "The number of particles must be divisible by the number of "
                 "worker processes."
@@ -28,10 +31,13 @@ class ParallelSteinSampler(AbstractSteinSampler):
         else:
             idx = self.comm.rank*self.particles_per_worker
             self.sampler = SteinSampler(
-                n_particles,
+                self.particles_per_worker,
                 log_p,
                 gd,
-                theta[idx:idx + self.particles_per_worker]
+                {
+                    v: x[idx:idx+self.particles_per_worker]
+                    for v, x in theta.items()
+                }
             )
 
     def train_on_batch(self, batch_feed):
@@ -76,46 +82,25 @@ class ParallelSteinSampler(AbstractSteinSampler):
         TODO: Do we need to clear out the gradient descent parameters? Namely,
         historical gradients and historical squared gradients?
         """
+        # Merge together all the particles. Notice that for all processes except
+        # the master node this returns none.
+        theta = self.merge()
+
         if self.comm.rank == 0:
             # Create an assignment of the destination for each particle.
-            assign = np.tile(
-                np.arange(self.comm.size), self.particles_per_worker
-            )
-            np.random.shuffle(assign)
-            assign = assign.reshape((self.comm.size, self.particles_per_worker))
-            # Broadcast the assignments to each node. Notice that we can skip
-            # the node with rank zero.
+            a = np.random.permutation(self.n_particles)
+            assign = np.reshape(a, (self.n_workers, self.particles_per_worker))
+            # Create a big array of all the particles.
+            theta_array, access = convert_dictionary_to_array(theta)
             for i in range(1, self.n_workers):
-                self.comm.send(assign[i], dest=i)
-
-            assignments = assign[0]
+                self.comm.send(theta_array[assign[i]], dest=i)
+            theta_array = theta_array[assign[0]]
         else:
+            # Initialize.
+            _, access = convert_dictionary_to_array(self.sampler.theta)
             # Receive the destinations for the particles from the master process.
-            assignments = self.comm.recv(source=0)
+            theta_array = self.comm.recv(source=0)
 
-        # Every process converts its dictionary of parameters to a numpy array
-        # and transmits the appropriate rows to the specified destination
-        # processes
-        theta_array, access = convert_dictionary_to_array(self.sampler.theta)
-        for i in range(self.n_workers):
-            if i == self.comm.rank:
-                # If the destination is the process itself, no action is
-                # required.
-                continue
-            # Create a boolean vector of which particles to transmit to each
-            # process. Here we ensure that there is at least one particle to
-            # transmit to the destination.
-            send_idx = assignments == i
-            if np.any(send_idx):
-                self.comm.send(theta_array[send_idx], dest=i)
-        # Filter out the transmitted particles and incrementally rebuild the
-        # numpy array of particles by receiving from the other processes.
-        theta_array = np.delete(
-            theta_array, np.where(assignments != self.comm.rank)[0], axis=0
-        )
-        while theta_array.shape[0] < self.particles_per_worker:
-            rec = self.comm.recv(source=MPI.ANY_SOURCE)
-            theta_array = np.vstack((theta_array, rec))
         # Convert the numpy array back to a dictionary using the saved access
         # indices.
         self.sampler.theta = convert_array_to_dictionary(theta_array, access)
