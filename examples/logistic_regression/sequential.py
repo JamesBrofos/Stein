@@ -1,56 +1,18 @@
 import numpy as np
-import tensorflow as tf
-import matplotlib.pyplot as plt
-from scipy import io
-from sklearn.model_selection import train_test_split
-from tensorflow.contrib.distributions import Normal, Gamma
 from stein.samplers import SteinSampler
 from stein.gradient_descent import AdamGradientDescent
-
-
-# For reproducibility.
-# np.random.seed(0)
-
-# Load data and partition into training and testing sets.
-data = io.loadmat("./data/covertype.mat")["covtype"]
-data_X, data_y = data[:, 1:], data[:, :1]
-data_y[data_y == 2] = 0.
-X_train, X_test, y_train, y_test = train_test_split(
-    data_X, data_y, test_size=0.2
+from model_and_data import (
+    log_p,
+    n_train,
+    n_batch,
+    logits,
+    model_X,
+    model_y,
+    X_train,
+    y_train,
+    X_test,
+    y_test
 )
-# Size of minibatches during training.
-n_batch = 50
-# Number of training data points.
-n_train, n_feats = X_train.shape
-
-# Define a logistic regression model in TensorFlow.
-with tf.variable_scope("model"):
-    # Placeholders include features, labels, linear coefficients, and prior
-    # covariance.
-    model_X = tf.placeholder(tf.float32, shape=[None, n_feats])
-    model_y = tf.placeholder(tf.float32, shape=[None, 1])
-    model_w = tf.Variable(tf.zeros([n_feats, 1]))
-    model_log_alpha = tf.Variable(tf.zeros([]))
-    model_alpha = tf.exp(model_log_alpha)
-    # Compute prior.
-    with tf.variable_scope("priors"):
-        w_prior = Normal(
-            tf.zeros([n_feats, 1]),
-            tf.reciprocal(tf.sqrt(model_alpha))
-        )
-        alpha_prior = Gamma(concentration=1., rate=0.01)
-    # Compute the likelihood function.
-    with tf.variable_scope("likelihood"):
-        logits = tf.matmul(model_X, model_w)
-        log_l = -tf.reduce_sum(tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=model_y, logits=logits
-        ))
-    # Compute the log-posterior of the model.
-    log_p = (
-        log_l * (n_train / n_batch) +
-        tf.reduce_sum(w_prior.log_prob(model_w)) +
-        alpha_prior.log_prob(model_alpha)
-    )
 
 
 def evaluate(sampler, data_feed):
@@ -86,6 +48,7 @@ for i in range(n_iters):
     if i % n_prog == 0:
         acc = evaluate(sampler, {model_X: X_test, model_y: y_test})
         print("Iteration {} / {}: {:4f}".format(i, n_iters, acc))
+    # Train on batch.
     batch = np.random.choice(n_train, n_batch, replace=False)
     X, y = X_train[batch], y_train[batch]
     sampler.train_on_batch({model_X: X, model_y: y})

@@ -19,8 +19,9 @@ from model_and_data import (
 )
 
 
-# Set interval at which to record output.
-n_prog = 100
+# Set interval at which to record output and shuffle particles.
+n_prog = 10
+n_shuffle = 10
 
 def evaluate(sampler, data_feed):
     """Evaluate the performance of the Bayesian neural network by computing its
@@ -66,9 +67,9 @@ while True:
     batch = np.random.choice(n_train, n_batch, replace=False)
     X, y = X_train[batch], y_train[batch]
     sampler.train_on_batch({model_X: X, model_y: y})
-    if current_iter % 10 == 0:
+    # Reassign the particles.
+    if current_iter % n_shuffle == 0:
         sampler.shuffle()
-
     # Output diagnostic variables.
     if current_iter % n_prog == 0:
         rmse_train = evaluate(sampler, {
@@ -80,3 +81,5 @@ while True:
             print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
                 current_iter, rmse_train, rmse_test
             ))
+    elif sampler.comm.rank == 0:
+        print("Iteration {}".format(current_iter))

@@ -20,7 +20,7 @@ from model_and_data import (
 
 
 # Set interval at which to record output.
-n_prog = 100
+n_prog = 10
 
 def evaluate(sampler, data_feed):
     """Evaluate the performance of the Bayesian neural network by computing its
@@ -73,5 +73,6 @@ while True:
         print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
             current_iter, rmse_train, rmse_test
         ))
-
+    else:
+        print("Iteration {}".format(current_iter))
 

@@ -41,7 +41,7 @@ n_train, n_feats = X_train.shape
 # number of particles to sample from the posterior.
 n_hidden = 50
 n_batch = 100
-n_particles = 40
+n_particles = 2000
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
