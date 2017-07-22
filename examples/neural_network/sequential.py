@@ -50,7 +50,7 @@ def evaluate(sampler, data_feed):
 # Current iteration of Stein variational gradient descent.
 current_iter = 0
 # Gradient descent object.
-gd = AdamGradientDescent(learning_rate=1e-1)
+gd = AdamGradientDescent(learning_rate=1e-1, decay=0.999)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
 sampler = SteinSampler(n_particles, log_p, gd, theta)
@@ -74,5 +74,5 @@ while True:
             current_iter, rmse_train, rmse_test
         ))
     else:
-        print("Iteration {}".format(current_iter))
+        pass
 

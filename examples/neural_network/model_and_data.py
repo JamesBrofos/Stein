@@ -5,11 +5,13 @@ from tensorflow.contrib.distributions import Normal, Gamma
 
 
 # For reproducibility.
-if True:
+if False:
     np.random.seed(6)
 
+
 # Import data.
-dataset = "./data/boston_housing.txt"
+datafile = "protein"
+dataset = "./data/{}.txt".format(datafile)
 data = np.loadtxt(dataset)
 # Extract the target variable and explanatory features.
 data_X = data[:, :-1]
@@ -39,9 +41,9 @@ n_train, n_feats = X_train.shape
 # Parameters for training such as the number of hidden neurons and the batch
 # size to use during training, the total number of training iterations, and the
 # number of particles to sample from the posterior.
-n_hidden = 50
+n_hidden = 50 if datafile not in ("protein", ) else 100
 n_batch = 100
-n_particles = 2000
+n_particles = 20
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
