@@ -5,6 +5,7 @@ from model_and_data import (
     n_particles,
     n_train,
     n_batch,
+    learning_rate,
     log_p,
     pred,
     theta,
@@ -20,7 +21,7 @@ from model_and_data import (
 
 
 # Set interval at which to record output.
-n_prog = 10
+n_prog = 100
 
 def evaluate(sampler, data_feed):
     """Evaluate the performance of the Bayesian neural network by computing its
@@ -50,7 +51,7 @@ def evaluate(sampler, data_feed):
 # Current iteration of Stein variational gradient descent.
 current_iter = 0
 # Gradient descent object.
-gd = AdamGradientDescent(learning_rate=1e-1, decay=0.999)
+gd = AdamGradientDescent(learning_rate=learning_rate, decay=0.999)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
 sampler = SteinSampler(n_particles, log_p, gd, theta)
@@ -73,6 +74,4 @@ while True:
         print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
             current_iter, rmse_train, rmse_test
         ))
-    else:
-        pass
 
