@@ -32,7 +32,7 @@ def evaluate(sampler, data_feed):
     # Merge the particles.
     theta = sampler.merge()
 
-    if sampler.comm.rank == 0:
+    if sampler.is_master:
         # Construct vectors to store the prediction for each of the particles
         # and each of the test data points under the posterior.
         y_test_pred = np.zeros([n_particles, data_feed[model_y].shape[0]])
@@ -58,7 +58,7 @@ current_iter = 0
 gd = AdamGradientDescent(learning_rate=1e-1)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
-sampler = ParallelSteinSampler(n_particles, log_p, gd, theta)
+sampler = ParallelSteinSampler(n_particles, n_shuffle, log_p, gd, theta)
 
 while True:
     # Increment the global number of learning iterations.
@@ -67,9 +67,7 @@ while True:
     batch = np.random.choice(n_train, n_batch, replace=False)
     X, y = X_train[batch], y_train[batch]
     sampler.train_on_batch({model_X: X, model_y: y})
-    # Reassign the particles.
-    if current_iter % n_shuffle == 0:
-        sampler.shuffle()
+
     # Output diagnostic variables.
     if current_iter % n_prog == 0:
         rmse_train = evaluate(sampler, {
@@ -77,9 +75,9 @@ while True:
             model_y: y_train * y_train_std + y_train_mean
         })
         rmse_test = evaluate(sampler, {model_X: X_test, model_y: y_test})
-        if sampler.comm.rank == 0:
+        if sampler.is_master:
             print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
                 current_iter, rmse_train, rmse_test
             ))
-    elif sampler.comm.rank == 0:
+    elif sampler.is_master:
         print("Iteration {}".format(current_iter))

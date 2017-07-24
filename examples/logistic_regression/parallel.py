@@ -24,7 +24,7 @@ def evaluate(sampler, data_feed):
     # Merge the particles.
     theta = sampler.merge()
 
-    if sampler.comm.rank == 0:
+    if sampler.is_master:
         # Construct vectors to store the prediction for each of the particles and
         # each of the test data points under the posterior.
         logits_pred = np.zeros([n_particles, data_feed[model_y].shape[0]])
@@ -50,19 +50,16 @@ n_particles = 100
 gd = AdamGradientDescent(learning_rate=1e-1)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian logistic regression model.
-sampler = ParallelSteinSampler(n_particles, log_p, gd)
+sampler = ParallelSteinSampler(n_particles, n_shuffle, log_p, gd)
 
 
 for i in range(n_iters):
-    if i % n_shuffle == 0:
-        # Reassign the particles.
-        sampler.shuffle()
     if i % n_prog == 0:
         # Output diagnostic variables.
         acc = evaluate(sampler, {model_X: X_test, model_y: y_test})
-        if sampler.comm.rank == 0:
+        if sampler.is_master:
             print("Iteration {} / {}: {:4f}".format(i, n_iters, acc))
-    elif sampler.comm.rank == 0:
+    elif sampler.is_master:
         print("Iteration {}".format(i))
 
     # Train on batch.

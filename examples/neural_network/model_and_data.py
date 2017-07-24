@@ -8,7 +8,7 @@ if False:
     np.random.seed(6)
 
 # Import data.
-datafile = "kin8nm"
+datafile = "boston"
 dataset = "./data/{}.txt".format(datafile)
 data = np.loadtxt(dataset)
 # Extract the target variable and explanatory features.

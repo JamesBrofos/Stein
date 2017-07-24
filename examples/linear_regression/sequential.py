@@ -1,13 +1,9 @@
 import numpy as np
-import os
 from time import time
 from stein.samplers import SteinSampler
 from stein.gradient_descent import AdamGradientDescent
 from model_and_data import log_p, model_X, model_y, data_X, data_y, data_w
 
-
-# Limit TensorFlow output.
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Record time elapsed.
 start_time = time()
