@@ -39,6 +39,9 @@ class AbstractKernel(object):
             h = 1.
         else:
             h = np.sqrt(0.5 * np.median(sq_dists) / np.log(theta.shape[0] + 1))
+            if np.isnan(h):
+                print(theta)
+                raise ValueError("Median distance contained NaN.")
 
         return sq_dists, h
 

@@ -92,6 +92,7 @@ with tf.variable_scope("model"):
             tf.reciprocal(tf.sqrt(model_lambda))
         )
     # Compute the log-posterior distribution.
+    # Bundles :)
     log_p = (
         # Rescaled log-likelihood (to account for batch updates).
         tf.reduce_sum(log_l.log_prob(model_y)) * n_train / n_batch +
