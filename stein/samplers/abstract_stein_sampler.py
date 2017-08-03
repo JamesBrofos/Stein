@@ -140,6 +140,12 @@ class AbstractSteinSampler(object):
         self.theta = convert_array_to_dictionary(theta_array, access_indices)
 
     @abstractmethod
+    def function_posterior_distribution(self, func, feed_dict):
+        """
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     def train_on_batch(self, batch_feed):
         """Trains the Stein variational gradient descent algorithm on a given
         batch of data (provided in the form of a TensorFlow feed dictionary).

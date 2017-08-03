@@ -1,8 +1,6 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.distributions import Normal, Gamma
-from stein.samplers import SteinSampler
-from stein.gradient_descent import AdamGradientDescent
 from utilities import enumerate_binary, construct_pairwise_interactions
 
 
@@ -63,24 +61,3 @@ with tf.variable_scope("model"):
         tf.reduce_sum(b_prior.log_prob(model_b)) +
         alpha_prior.log_prob(model_alpha)
     )
-
-# Number of learning iterations.
-n_iters = 10000
-n_prog = 100
-# Sample from the posterior using Stein variational gradient descent.
-n_particles = 100
-gd = AdamGradientDescent(learning_rate=1e-1, decay=0.9999)
-sampler = SteinSampler(n_particles, log_p, gd)
-# Perform learning iterations.
-for i in range(n_iters):
-    # Train on batch.
-    batch_feed = {model_X_W: XP, model_X_b: X}
-    sampler.train_on_batch(batch_feed)
-    if i % n_prog == 0:
-        l = np.zeros((n_particles, ))
-        for j in range(n_particles):
-            batch_feed.update({v: x[j] for v, x in sampler.theta.items()})
-            l[j] = sampler.sess.run(log_l, batch_feed)
-        log_likelihood = np.mean(l)
-        print("Iteration {} / {}\t\t{:.4f}".format(i, n_iters, log_likelihood))
-
