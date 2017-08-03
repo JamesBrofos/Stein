@@ -20,7 +20,7 @@ from model_and_data import (
 n_iters = 500
 n_prog = 1
 # Sample from the posterior using Stein variational gradient descent.
-n_particles = 1000
+n_particles = 100
 gd = AdamGradientDescent(learning_rate=1e-1, decay=0.9999)
 sampler = SteinSampler(n_particles, log_p, gd)
 # Perform learning iterations.
