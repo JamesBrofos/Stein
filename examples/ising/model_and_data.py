@@ -4,8 +4,14 @@ from tensorflow.contrib.distributions import Normal, Gamma
 from utilities import enumerate_binary, construct_pairwise_interactions
 
 
-# Load in the coronary heart disease dataset.
-X = np.loadtxt("./data/coronary.csv", delimiter=",")
+# Load in the coronary heart disease dataset or synthetic data.
+use_synthetic = True
+if use_synthetic:
+    path = "./data/synthetic/samples.csv"
+else:
+    path = "./data/applied/coronary.csv"
+X = np.loadtxt(path, delimiter=",")
+
 # Number of binary random variables.
 n_samples, n = X.shape
 

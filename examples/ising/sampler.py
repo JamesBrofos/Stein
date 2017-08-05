@@ -34,7 +34,7 @@ indices = np.random.choice(n_binary, size=(n_samples, ), p=probs)
 samples = B[indices]
 
 # Save variables to file.
-np.savetxt("./data/weights.csv", W, delimiter=",")
-np.savetxt("./data/biases.csv", b, delimiter=",")
-np.savetxt("./data/samples.csv", samples, delimiter=",")
+np.savetxt("./data/synthetic/weights.csv", W, delimiter=",")
+np.savetxt("./data/synthetic/biases.csv", b, delimiter=",")
+np.savetxt("./data/synthetic/samples.csv", samples, delimiter=",")
 

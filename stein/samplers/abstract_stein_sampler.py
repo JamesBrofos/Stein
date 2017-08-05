@@ -140,7 +140,7 @@ class AbstractSteinSampler(object):
         self.theta = convert_array_to_dictionary(theta_array, access_indices)
 
     @abstractmethod
-    def function_posterior_distribution(self, func, feed_dict):
+    def function_posterior(self, func, feed_dict):
         """
         """
         raise NotImplementedError()
