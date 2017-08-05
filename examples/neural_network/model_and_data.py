@@ -4,7 +4,7 @@ from tensorflow.contrib.distributions import Normal, Gamma
 
 
 # For reproducibility.
-if False:
+if True:
     np.random.seed(6)
 
 # Import data.
@@ -33,6 +33,10 @@ y_train_mean, y_train_std = np.mean(y_train), np.std(y_train)
 X_train = (X_train - X_train_mean) / X_train_std
 X_test = (X_test - X_train_mean) / X_train_std
 y_train = (y_train - y_train_mean) / y_train_std
+# Create a development set.
+n_dev = min(int(np.round(0.1 * X_train.shape[0])), 500)
+X_dev, y_dev = X_train[-n_dev:], y_train[-n_dev:]
+X_train, y_train = X_train[:-n_dev], y_train[:-n_dev]
 # Number of explanatory variables.
 n_train, n_feats = X_train.shape
 

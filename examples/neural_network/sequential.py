@@ -11,11 +11,14 @@ from model_and_data import (
     theta,
     model_X,
     model_y,
+    model_log_gamma,
     y_train_mean,
     y_train_std,
     X_train,
+    X_dev,
     X_test,
     y_train,
+    y_dev,
     y_test
 )
 
@@ -29,22 +32,56 @@ def evaluate(sampler, data_feed):
     this function performs normalization based on the mean and variance
     parameters of the training data.
     """
-    # Construct vectors to store the prediction for each of the particles and
-    # each of the test data points under the posterior.
-    y_test_pred = np.zeros([n_particles, data_feed[model_y].shape[0]])
     # We adopt a Bayesian perspective on computing the metrics by averaging over
     # the predictions of each constituent particle.
-    for i in range(n_particles):
-        feed = {v: x[i] for v, x in sampler.theta.items()}
-        feed.update(data_feed)
-        y_test_pred[i] = (
-            sampler.sess.run(pred, feed) * y_train_std + y_train_mean
-        ).ravel()
-
+    y_test_pred = (
+        sampler.function_posterior(pred, data_feed) * y_train_std + y_train_mean
+    )
     # Average predictions across particles.
     avg_pred = np.mean(y_test_pred, axis=0)
     # Evaluation.
     rmse = np.sqrt(np.mean((avg_pred - data_feed[model_y].ravel())**2))
+
+
+
+    ### LIKELIHOOD
+    log_gamma_copy = sampler.theta[model_log_gamma].copy()
+    y_dev_pred = (
+        sampler.function_posterior(
+            pred,
+            {model_X: X_dev, model_y: y_dev}
+        )
+    ) * y_train_std + y_train_mean
+    def f_log_lik(log_gamma, y_pred):
+        return np.sum(np.log(np.sqrt(np.exp(log_gamma)) / np.sqrt(2*np.pi) * np.exp(-0.5 * (np.power(y_pred - y_dev.ravel(), 2)) * np.exp(log_gamma))))
+
+    # The higher probability is better.
+
+    print(np.exp(sampler.theta[model_log_gamma]))
+
+    for i in range(sampler.n_particles):
+        y_pred = y_dev_pred[i].ravel()
+        sampler.theta[model_log_gamma][i] = -np.log(np.mean(
+            (y_pred - (y_dev.ravel() * y_train_std + y_train_mean)) ** 2
+        ))
+
+    print(np.exp(sampler.theta[model_log_gamma]))
+
+    n_test = data_feed[model_X].shape[0]
+    prob = np.zeros([sampler.n_particles, n_test])
+    for i in range(sampler.n_particles):
+        prob[i] = np.sqrt(np.exp(sampler.theta[model_log_gamma][i])) / np.sqrt(2*np.pi) * np.exp(-0.5 * (np.power(y_test_pred[i] - data_feed[model_y].ravel(), 2)) * np.exp(sampler.theta[model_log_gamma][i]))
+        # prob[i] = 1. / np.sqrt(2*np.pi) * np.exp(-0.5 * (np.power(y_test_pred[i] - data_feed[model_y].ravel(), 2)))
+
+    ll = np.mean(np.log(np.mean(prob, axis=0)))
+
+
+    print(ll)
+
+    # Reset.
+    sampler.theta[model_log_gamma] = log_gamma_copy
+
+    ###
 
     return rmse
 

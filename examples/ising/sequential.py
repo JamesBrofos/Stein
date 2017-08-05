@@ -41,12 +41,12 @@ for i in range(n_iters):
     batch_feed = {model_X_W: XP, model_X_b: X}
     sampler.train_on_batch(batch_feed)
     if i % n_prog == 0:
-        log_likelihood = sampler.function_posterior(log_l, batch_feed)
+        log_likelihood = sampler.function_posterior(log_l, batch_feed, axis=0)
         if use_synthetic:
-            W_mse = sampler.function_posterior(weights_mse, batch_feed)
-            b_mse = sampler.function_posterior(biases_mse, batch_feed)
+            W_mse = sampler.function_posterior(weights_mse, batch_feed, axis=0)
+            b_mse = sampler.function_posterior(biases_mse, batch_feed, axis=0)
             print("Iteration {} / {}\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}".format(
-                i, n_iters, log_likelihood, W_mse, b_mse
+                i, n_iters, log_likelihood[0], W_mse[0], b_mse[0]
             ))
         else:
             print("Iteration {} / {}\t\t{:.4f}".format(
