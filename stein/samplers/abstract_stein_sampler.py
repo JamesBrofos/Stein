@@ -140,8 +140,27 @@ class AbstractSteinSampler(object):
         self.theta = convert_array_to_dictionary(theta_array, access_indices)
 
     @abstractmethod
-    def function_posterior(self, func, feed_dict):
-        """
+    def function_posterior(self, func, feed_dict, average=True):
+        """This method computes a posterior distribution of a provided function
+        under the posterior distribution learned via Stein variational gradient
+        descent. This function can be used to produce posterior mean squared
+        errors and the posterior mean log-likelihood. This function includes an
+        optional parameter to compute the average of the function's posterior.
+
+        Parameters:
+            func (TensorFlow Tensor): A function to be executed in a TensorFlow
+                session. The output of the function are averaged across all of
+                the posterior samples under the Bayesian model.
+            feed_dict (dictionary): A dictionary mapping TensorFlow placeholders
+                to provided values.
+            average (boolean, optional): Determines whether or not the average
+                of the posterior distribution should be computed instead of
+                simply returning samples.
+
+        Returns:
+            Numpy array or Float: If `average` is true then the posterior mean
+                is returned. Otherwise, a numpy array of samples from the
+                function's posterior are returned.
         """
         raise NotImplementedError()
 

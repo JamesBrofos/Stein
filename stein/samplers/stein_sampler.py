@@ -36,7 +36,7 @@ class SteinSampler(AbstractSteinSampler):
         # Apply the optimal perturbation direction.
         self.update_particles(convert_dictionary_to_array(grads)[0])
 
-    def function_posterior(self, func, feed_dict):
+    def function_posterior(self, func, feed_dict, average=True):
         """Implementation of abstract base class method."""
         # Initialize a vector to store the value of the function for each particle.
         dist = np.zeros((self.n_particles, ))
@@ -47,4 +47,7 @@ class SteinSampler(AbstractSteinSampler):
             dist[i] = self.sess.run(func, feed_dict)
 
         # Either return posterior samples of the input function.
-        return dist
+        if average:
+            return dist.mean()
+        else:
+            return dist

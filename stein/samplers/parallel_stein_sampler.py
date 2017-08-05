@@ -75,7 +75,7 @@ class ParallelSteinSampler(AbstractSteinSampler):
                 }
             )
 
-    def function_posterior(self, func, feed_dict):
+    def function_posterior(self, func, feed_dict, average=True):
         """Implementation of abstract base class method."""
         # Merge together all of the particles from all constituent processes.
         theta = self.merge()
@@ -92,9 +92,10 @@ class ParallelSteinSampler(AbstractSteinSampler):
                 )
                 dist[i] = self.sampler.sess.run(func, feed_dict)
 
-            return dist
-        else:
-            return np.nan
+            if average:
+                return dist.mean()
+            else:
+                return dist
 
     def train_on_batch(self, batch_feed):
         """Implementation of abstract base class method."""
