@@ -5,16 +5,21 @@ from model_and_data import (
     n_particles,
     n_train,
     n_batch,
+    learning_rate,
     log_p,
+    log_l,
     pred,
     theta,
     model_X,
     model_y,
+    model_log_gamma,
     y_train_mean,
     y_train_std,
     X_train,
+    X_dev,
     X_test,
     y_train,
+    y_dev,
     y_test
 )
 
@@ -31,8 +36,17 @@ def evaluate(sampler, data_feed):
     """
     # Merge the particles.
     theta = sampler.merge()
-
+    # Prediction on the development set.
+    y_dev_pred = (
+        sampler.function_posterior(
+            pred,
+            {model_X: X_dev, model_y: y_dev}
+        )
+    )
     if sampler.is_master:
+        # Make sure to project the prediction into the real target space by
+        # unnormalizing.
+        y_dev_pred = y_dev_pred * y_train_std + y_train_mean
         # Construct vectors to store the prediction for each of the particles
         # and each of the test data points under the posterior.
         y_test_pred = np.zeros([n_particles, data_feed[model_y].shape[0]])
@@ -50,7 +64,31 @@ def evaluate(sampler, data_feed):
         # Evaluation.
         rmse = np.sqrt(np.mean((avg_pred - data_feed[model_y].ravel())**2))
 
-        return rmse
+        # Apply a heuristic for the prediction precision that tends to increase
+        # test set likelihood.
+        for i in range(sampler.n_particles):
+            y_pred = y_dev_pred[i].ravel()
+            theta[model_log_gamma][i] = -np.log(np.mean(
+                (y_pred - (y_dev.ravel() * y_train_std + y_train_mean)) ** 2
+            ))
+
+        # Create a matrix to store the probability of each target variable in
+        # the development set under the posterior model.
+        n_test = data_feed[model_X].shape[0]
+        prob = np.zeros([sampler.n_particles, n_test])
+        # Iterate over each particle and compute the log-likelihood of the test
+        # data.
+        for i in range(sampler.n_particles):
+            prob[i] = np.sqrt(
+                np.exp(theta[model_log_gamma][i])
+            ) / np.sqrt(2*np.pi) * np.exp(
+                -0.5 * (y_test_pred[i] - data_feed[model_y].ravel()) ** 2 *
+                np.exp(theta[model_log_gamma][i])
+            )
+        # Compute average log-likelihood.
+        ll = np.mean(np.log(np.mean(prob, axis=0)))
+
+        return rmse, ll
 
 # Current iteration of Stein variational gradient descent.
 current_iter = 0
@@ -70,14 +108,16 @@ while True:
 
     # Output diagnostic variables.
     if current_iter % n_prog == 0:
-        rmse_train = evaluate(sampler, {
+        train_metrics = evaluate(sampler, {
             model_X: X_train,
             model_y: y_train * y_train_std + y_train_mean
         })
-        rmse_test = evaluate(sampler, {model_X: X_test, model_y: y_test})
+        test_metrics = evaluate(
+            sampler, {model_X: X_test, model_y: y_test}
+        )
         if sampler.is_master:
-            print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
-                current_iter, rmse_train, rmse_test
+            print("Iteration {}:\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}".format(
+                current_iter, train_metrics[0], test_metrics[0], test_metrics[1]
             ))
-    elif sampler.is_master:
+    elif sampler.is_master and False:
         print("Iteration {}".format(current_iter))

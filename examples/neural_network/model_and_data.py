@@ -4,11 +4,11 @@ from tensorflow.contrib.distributions import Normal, Gamma
 
 
 # For reproducibility.
-if True:
-    np.random.seed(6)
+if False:
+    np.random.seed(0)
 
 # Import data.
-datafile = "boston"
+datafile = "concrete"
 dataset = "./data/{}.txt".format(datafile)
 data = np.loadtxt(dataset)
 # Extract the target variable and explanatory features.
@@ -74,7 +74,8 @@ with tf.variable_scope("model"):
         ) + model_b_2
     # Likelihood function.
     with tf.variable_scope("likelihood"):
-        log_l = Normal(pred, tf.reciprocal(tf.sqrt(model_gamma)))
+        log_l_dist = Normal(pred, tf.reciprocal(tf.sqrt(model_gamma)))
+        log_l = tf.reduce_sum(log_l_dist.log_prob(model_y))
     # Priors.
     with tf.variable_scope("priors"):
         prior_gamma = Gamma(alpha, beta)
@@ -96,10 +97,9 @@ with tf.variable_scope("model"):
             tf.reciprocal(tf.sqrt(model_lambda))
         )
     # Compute the log-posterior distribution.
-    # Bundles :)
     log_p = (
         # Rescaled log-likelihood (to account for batch updates).
-        tf.reduce_sum(log_l.log_prob(model_y)) * n_train / n_batch +
+        log_l * n_train / n_batch +
         # Variance priors.
         prior_gamma.log_prob(model_gamma) +
         prior_lambda.log_prob(model_lambda) +
