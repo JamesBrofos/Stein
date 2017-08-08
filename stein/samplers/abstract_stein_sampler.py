@@ -52,9 +52,6 @@ class AbstractSteinSampler(object):
         """
         # Number of particles to use during sampling.
         self.n_particles = n_particles
-        # Construct a squared exponential kernel for computing the repulsive
-        # force between particles.
-        self.kernel = SquaredExponentialKernel()
         # Gradient descent object will determine how particles are updated.
         self.gd = gd
 
@@ -63,6 +60,10 @@ class AbstractSteinSampler(object):
         self.model_vars = tf.get_collection(
             tf.GraphKeys.TRAINABLE_VARIABLES, "model"
         )
+        # Construct a squared exponential kernel for computing the repulsive
+        # force between particles.
+        # self.kernel = SquaredExponentialKernel(self.n_particles, self.sess)
+        self.kernel = SquaredExponentialKernel()
         # Create class variables for the log-posterior and the gradient of the
         # log-posterior with respect to model parameters.
         self.log_p = log_p
