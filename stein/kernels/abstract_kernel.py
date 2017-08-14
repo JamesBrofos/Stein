@@ -1,6 +1,6 @@
 import numpy as np
+import tensorflow as tf
 from abc import ABCMeta, abstractmethod
-from scipy.spatial.distance import cdist
 
 
 class AbstractKernel(object):
@@ -13,37 +13,42 @@ class AbstractKernel(object):
     squared Euclidean distance between points in the input space, as well as an
     abstract method for computing the kernel and gradient of the kernel matrix.
     """
-    def squared_distance_and_bandwidth(self, theta):
-        """Compute the pairwise squared Euclidean distances between all of the
-        particles. This function also computes the bandwidth to use in the
-        kernel, defaulting to a median-based heuristic if no bandwidth is
-        supplied by the user.
+    __metaclass__ = ABCMeta
+
+    def __init__(self, n_particles, sess):
+        """Initialize the parameters of the abstract kernel object.
 
         Parameters:
-            theta (numpy array): A matrix representation of the particles and
-                values assumed by each of the parameters in the model. The
-                dimensions of the matrix are the number of particles by the
-                number of parameters.
-
-        Returns:
-            Tuple: A tuple consisting of the squared Euclidean distances between
-                a row of `theta` and all of the other rows and a bandwidth
-                parameter that is computed using a heuristic which asserts that
-                the "contribution of a point's own gradient and the influence of
-                all other points balance with each other" (see the Stein
-                variational gradient descent paper).
+            n_particles (int): The number of particles to use in the algorithm.
+                This is equivalently the number of samples to generate from the
+                target distribution.
+            sess (TensorFlow Session): A TensorFlow session in which to execute
+                operations in the TensorFlow computational graph.
         """
-        sq_dists = cdist(theta, theta, metric="sqeuclidean")
-        # Account for the possibility that there is only a single particle.
-        if theta.shape[0] == 1:
-            h = 1.
-        else:
-            h = np.sqrt(0.5 * np.median(sq_dists) / np.log(theta.shape[0] + 1))
-            if np.isnan(h):
-                print(theta)
-                raise ValueError("Median distance contained NaN.")
+        # Store the number of particles.
+        self.n_particles = n_particles
+        # Compute the squared distance between particles.
+        self.theta = [
+            tf.placeholder(tf.float32, [None]) for _ in range(self.n_particles)
+        ]
+        T = tf.stack(self.theta)
+        r = tf.reshape(tf.reduce_sum(T*T, 1), [-1, 1])
+        self.D = r + tf.transpose(r) - 2 * tf.matmul(T, tf.transpose(T))
 
-        return sq_dists, h
+        # Compute the kernel bandwidth.
+        V = tf.reshape(self.D, [-1])
+        m = self.n_particles ** 2 // 2 + 1
+        if self.n_particles % 2 == 0:
+            bw = tf.reduce_mean(tf.nn.top_k(V, m).values[m - 2:])
+        else:
+            bw = tf.nn.top_k(V, m).values[m - 1]
+        # Prevent gradients from propagating backwards through the median.
+        self.bandwidth = tf.stop_gradient(tf.sqrt(
+            0.5 * bw / np.log(self.n_particles + 1)
+        ))
+
+        # Set the TensorFlow session.
+        self.sess = sess
 
     @abstractmethod
     def kernel_and_grad(self, theta):
@@ -63,3 +68,5 @@ class AbstractKernel(object):
                 respect to each of the particles.
         """
         raise NotImplementedError()
+
+

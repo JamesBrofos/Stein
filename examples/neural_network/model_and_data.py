@@ -5,7 +5,7 @@ from tensorflow.contrib.distributions import Normal, Gamma
 
 # For reproducibility.
 if False:
-    np.random.seed(0)
+    np.random.seed(1)
 
 # Import data.
 datafile = "boston"

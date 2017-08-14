@@ -62,8 +62,8 @@ class AbstractSteinSampler(object):
         )
         # Construct a squared exponential kernel for computing the repulsive
         # force between particles.
-        # self.kernel = SquaredExponentialKernel(self.n_particles, self.sess)
-        self.kernel = SquaredExponentialKernel()
+        self.kernel = SquaredExponentialKernel(self.n_particles, self.sess)
+        # self.kernel = SquaredExponentialKernel()
         # Create class variables for the log-posterior and the gradient of the
         # log-posterior with respect to model parameters.
         self.log_p = log_p
