@@ -5,7 +5,7 @@ from tensorflow.contrib.distributions import Normal, Gamma
 
 # For reproducibility.
 if False:
-    np.random.seed(6)
+    np.random.seed(1)
 
 # Import data.
 datafile = "boston"
@@ -33,6 +33,10 @@ y_train_mean, y_train_std = np.mean(y_train), np.std(y_train)
 X_train = (X_train - X_train_mean) / X_train_std
 X_test = (X_test - X_train_mean) / X_train_std
 y_train = (y_train - y_train_mean) / y_train_std
+# Create a development set.
+n_dev = min(int(np.round(0.1 * X_train.shape[0])), 500)
+X_dev, y_dev = X_train[-n_dev:], y_train[-n_dev:]
+X_train, y_train = X_train[:-n_dev], y_train[:-n_dev]
 # Number of explanatory variables.
 n_train, n_feats = X_train.shape
 
@@ -70,7 +74,8 @@ with tf.variable_scope("model"):
         ) + model_b_2
     # Likelihood function.
     with tf.variable_scope("likelihood"):
-        log_l = Normal(pred, tf.reciprocal(tf.sqrt(model_gamma)))
+        log_l_dist = Normal(pred, tf.reciprocal(tf.sqrt(model_gamma)))
+        log_l = tf.reduce_sum(log_l_dist.log_prob(model_y))
     # Priors.
     with tf.variable_scope("priors"):
         prior_gamma = Gamma(alpha, beta)
@@ -94,7 +99,7 @@ with tf.variable_scope("model"):
     # Compute the log-posterior distribution.
     log_p = (
         # Rescaled log-likelihood (to account for batch updates).
-        tf.reduce_sum(log_l.log_prob(model_y)) * n_train / n_batch +
+        log_l * n_train / n_batch +
         # Variance priors.
         prior_gamma.log_prob(model_gamma) +
         prior_lambda.log_prob(model_lambda) +

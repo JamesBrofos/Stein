@@ -1,4 +1,6 @@
+import tensorflow as tf
 import numpy as np
+from scipy.spatial.distance import cdist
 from .abstract_kernel import AbstractKernel
 
 
@@ -14,19 +16,19 @@ class SquaredExponentialKernel(AbstractKernel):
     between particles, scales them by the squared bandwidth, and then
     exponentiates that value.
     """
+    def __init__(self, n_particles, sess):
+        """Initialize the parameters of the squared exponential kernel object.
+        """
+        super(SquaredExponentialKernel, self).__init__(n_particles, sess)
+        self.K = tf.exp(-self.D / tf.square(self.bandwidth) / 2.)
+        self.dK = tf.gradients(self.K, self.theta)
+
     def kernel_and_grad(self, theta):
         """Implementation of abstract base class method."""
-        # Number of particles used to sample from the distribution.
-        n_particles, n_params = theta.shape
-        # Compute the pairwise squared Euclidean distances between all of the
-        # particles and the bandwidth. This allows us to compute the kernel
-        # matrix.
-        sq_dists, h = self.squared_distance_and_bandwidth(theta)
-        K = np.exp(-sq_dists / h**2 / 2.)
-        # Compute the average of the gradient of the kernel with respect to
-        # each of the particles.
-        dK = np.zeros((n_particles, n_params))
-        for i in range(n_particles):
-            dK[i] = K[i].dot(theta[i] - theta) / (h**2)
-
-        return K, dK
+        feed = {self.theta[i]: theta[i] for i in range(self.n_particles)}
+        kernel, grads = self.sess.run([self.K, self.dK], feed)
+        # TODO: Why do we need to multiply by 1/2 to get numbers consistent with
+        # original SVGD paper?
+        grads = -0.5 * np.vstack(grads)
+        # grads = -np.vstack(grads)
+        return kernel, grads

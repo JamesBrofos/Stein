@@ -75,6 +75,32 @@ class ParallelSteinSampler(AbstractSteinSampler):
                 }
             )
 
+    def function_posterior(self, func, feed_dict, axis=None):
+        """Implementation of abstract base class method."""
+        # Merge together all of the particles from all constituent processes.
+        theta = self.merge()
+        # Do all the processing on the master process since it has all of the
+        # particles.
+        if self.is_master:
+            # Initialize a vector to store the value of the function for each
+            # sample from the Bayesian posterior.
+            dist = []
+            # Iterate over each particle and compute the value of the function.
+            for i in range(self.n_particles):
+                feed_dict.update(
+                    {v: x[i] for v, x in theta.items()}
+                )
+                dist.append(np.ravel(self.sampler.sess.run(func, feed_dict)))
+
+            # Convert to a numpy array.
+            dist = np.array(dist)
+            # Either return posterior samples of the input function or the
+            # posterior mean.
+            if axis is not None:
+                return dist.mean(axis=axis)
+            else:
+                return dist
+
     def train_on_batch(self, batch_feed):
         """Implementation of abstract base class method."""
         self.sampler.train_on_batch(batch_feed)
