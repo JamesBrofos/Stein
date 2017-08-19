@@ -31,7 +31,7 @@ with tf.variable_scope("model"):
             tf.zeros([n_feats, 1]),
             tf.reciprocal(tf.sqrt(model_alpha))
         )
-        alpha_prior = Gamma(concentration=1., rate=0.01)
+        alpha_prior = Gamma(1., 0.01)
     # Compute the likelihood function.
     with tf.variable_scope("likelihood"):
         logits = tf.matmul(model_X, model_w)

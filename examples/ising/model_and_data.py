@@ -14,6 +14,8 @@ X = np.loadtxt(path, delimiter=",")
 
 # Number of binary random variables.
 n_samples, n = X.shape
+# Number of particles to sample.
+n_particles = 2000
 
 # Load in the binarization of the space.
 E = enumerate_binary(n)
