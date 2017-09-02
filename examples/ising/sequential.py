@@ -6,6 +6,7 @@ from stein.samplers import SteinSampler
 from stein.gradient_descent import AdamGradientDescent
 from model_and_data import (
     use_synthetic,
+    n_particles,
     log_p,
     log_l,
     X,
@@ -22,7 +23,6 @@ from model_and_data import (
 n_iters = 1000
 n_prog = 1
 # Sample from the posterior using Stein variational gradient descent.
-n_particles = 1000
 gd = AdamGradientDescent(learning_rate=1e-1, decay=0.9999)
 sampler = SteinSampler(n_particles, log_p, gd)
 
@@ -50,7 +50,7 @@ for i in range(n_iters):
             ))
         else:
             print("Iteration {} / {}\t\t{:.4f}".format(
-                i, n_iters, log_likelihood
+                i, n_iters, log_likelihood[0]
             ))
 
 

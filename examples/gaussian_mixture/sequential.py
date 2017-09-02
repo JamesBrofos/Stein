@@ -8,9 +8,9 @@ from model_and_data import log_p, data_X, n_particles, theta
 
 
 # Number of learning iterations.
-n_iters = 500
+n_iters = 600
 # Sample from the posterior using Stein variational gradient descent.
-gd = AdamGradientDescent(learning_rate=1.5e0)
+gd = AdamGradientDescent(learning_rate=1e0)
 sampler = SteinSampler(n_particles, log_p, gd, theta)
 # Perform learning iterations.
 for i in range(n_iters):
@@ -22,7 +22,7 @@ for i in range(n_iters):
 theta = list(sampler.theta.values())[0]
 
 
-if False:
+if True:
     r = np.linspace(-4., 4., num=100)
     dens = 1./3 * norm.pdf(r, loc=-2.) + 2./3 * norm.pdf(r, loc=2.)
     plt.figure(figsize=(8, 6))
@@ -34,7 +34,7 @@ if False:
 # Show diagnostics.
 w = np.random.normal()
 b = np.random.uniform(0., 2.*np.pi)
-print("MSE(E[X]) = {}".format(np.log10(
+print("MSE(E[X]) = {}".format(np.log(
     np.mean((data_X.mean() - theta.mean())**2))
 ))
 print("MSE(E[X^2]) = {}".format(np.log(

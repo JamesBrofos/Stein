@@ -11,7 +11,7 @@ start_time = time()
 n_iters = 500
 # Sample from the posterior using Stein variational gradient descent.
 n_particles = 80
-n_shuffle = 10
+n_shuffle = 1
 gd = AdamGradientDescent(learning_rate=1e-1)
 sampler = ParallelSteinSampler(n_particles, n_shuffle, log_p, gd)
 # Perform learning iterations.
