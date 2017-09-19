@@ -36,6 +36,13 @@ class SteinSampler(AbstractSteinSampler):
         # Apply the optimal perturbation direction.
         self.update_particles(convert_dictionary_to_array(grads)[0])
 
+    @property
+    def samples(self):
+        """Converts the dictionary of sampled parameters into a numpy array for
+        easier accessibility.
+        """
+        return convert_dictionary_to_array(self.theta)[0]
+
     def function_posterior(self, func, feed_dict, axis=None):
         """Implementation of abstract base class method."""
         # Initialize a vector to store the value of the function for each particle.
