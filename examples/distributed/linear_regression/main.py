@@ -2,9 +2,8 @@ import numpy as np
 import tensorflow as tf
 from time import time
 from tensorflow.contrib.distributions import Normal
-from stein.samplers import SteinSampler
+from stein.samplers import DistributedSteinSampler
 from stein.optimizers import AdamGradientDescent
-
 
 
 # Import data.
@@ -35,15 +34,18 @@ start_time = time()
 # Number of learning iterations.
 n_iters = 500
 # Sample from the posterior using Stein variational gradient descent.
-n_particles = 100
+n_threads = 4
+n_particles = 4000
 gd = AdamGradientDescent(learning_rate=1e-1)
-sampler = SteinSampler(n_particles, log_p, gd)
+sampler = DistributedSteinSampler(n_threads, n_particles, log_p, gd)
 # Perform learning iterations.
 for i in range(n_iters):
-    sampler.train_on_batch({
-        model_X: data_X,
-        model_y: data_y
-    })
+    start_iter = time()
+    sampler.train_on_batch({model_X: data_X, model_y: data_y})
+    end_iter = time()
+    print("Iteration {}. Time to complete iteration: {}".format(
+        i, end_iter - start_iter
+    ))
 
 # Show diagnostics.
 est = np.array(list(sampler.theta.values()))[0].mean(axis=0).ravel()
