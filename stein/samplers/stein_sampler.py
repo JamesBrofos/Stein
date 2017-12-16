@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from time import time
 from .abstract_stein_sampler import AbstractSteinSampler
 from ..utilities.converters import convert_dictionary_to_array
 

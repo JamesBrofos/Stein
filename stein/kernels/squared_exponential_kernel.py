@@ -1,6 +1,5 @@
-import tensorflow as tf
 import numpy as np
-from scipy.spatial.distance import cdist
+import tensorflow as tf
 from .abstract_kernel import AbstractKernel
 
 
@@ -29,6 +28,8 @@ class SquaredExponentialKernel(AbstractKernel):
         kernel, grads = self.sess.run([self.K, self.dK], feed)
         # TODO: Why do we need to multiply by 1/2 to get numbers consistent with
         # original SVGD paper?
-        grads = -0.5 * np.vstack(grads)
-        # grads = -np.vstack(grads)
+        if True:
+            grads = -0.5 * np.vstack(grads)
+        else:
+            grads = -np.vstack(grads)
         return kernel, grads

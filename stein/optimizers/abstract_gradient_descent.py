@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class AbstractGradientDescent(object):
+class AbstractGradientDescent:
     """Abstract Gradient Descent Class
 
     A gradient descent object is characterized by both its global learning rate

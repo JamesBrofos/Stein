@@ -1,11 +1,11 @@
-import tensorflow as tf
 import numpy as np
-from abc import ABCMeta, abstractmethod
+import tensorflow as tf
+from abc import abstractmethod
 from ..kernels import SquaredExponentialKernel
 from ..utilities import convert_array_to_dictionary, convert_dictionary_to_array
 
 
-class AbstractSteinSampler(object):
+class AbstractSteinSampler:
     """Abstract Stein Sampler Class
 
     This class implements the algorithm from the paper "Stein Variational
@@ -74,16 +74,17 @@ class AbstractSteinSampler(object):
         # latter method works well for relatively simple models, but better
         # initialization is required for complex distributions such as those
         # that are parametrized by neural networks.
+        #
+        # Notice that `theta` is a dictionary that maps model parameters to a
+        # matrix representing the value of that parameter for each of the
+        # particles.
         if theta is not None:
             self.theta = theta
         else:
-            # Notice that `theta` is a dictionary that maps model parameters to
-            # a matrix representing the value of that parameter for each of the
-            # particles.
             self.theta = {
                 v: np.random.normal(
                     size=[self.n_particles] + v.get_shape().as_list()
-                )
+                ) * 0.01
                 for v in self.model_vars
             }
 
