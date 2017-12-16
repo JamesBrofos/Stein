@@ -34,7 +34,7 @@ start_time = time()
 # Number of learning iterations.
 n_iters = 500
 # Sample from the posterior using Stein variational gradient descent.
-n_particles = 4000
+n_particles = 100
 gd = AdamGradientDescent(learning_rate=1e-1)
 sampler = SteinSampler(n_particles, log_p, gd)
 # Perform learning iterations.
