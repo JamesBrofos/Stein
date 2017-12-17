@@ -18,7 +18,7 @@ class SquaredExponentialKernel(AbstractKernel):
     def __init__(self, n_particles, sess):
         """Initialize the parameters of the squared exponential kernel object.
         """
-        super(SquaredExponentialKernel, self).__init__(n_particles, sess)
+        super().__init__(n_particles, sess)
         self.K = tf.exp(-self.D / tf.square(self.bandwidth) / 2.)
         self.dK = tf.gradients(self.K, self.theta)
 

@@ -34,7 +34,7 @@ class AdamGradientDescent(AbstractGradientDescent):
                 average of the current squared gradient and the previous squared
                 gradients.
         """
-        super(AdamGradientDescent, self).__init__(learning_rate, decay)
+        super().__init__(learning_rate, decay)
         self.beta_1 = beta_1
         self.beta_2 = beta_2
 

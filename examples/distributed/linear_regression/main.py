@@ -43,7 +43,7 @@ for i in range(n_iters):
     start_iter = time()
     sampler.train_on_batch({model_X: data_X, model_y: data_y})
     end_iter = time()
-    print("Iteration {}. Time to complete iteration: {}".format(
+    print("Iteration {}. Time to complete iteration: {:.4f}".format(
         i, end_iter - start_iter
     ))
 

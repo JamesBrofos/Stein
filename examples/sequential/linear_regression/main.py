@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from time import time
 from tensorflow.contrib.distributions import Normal
 from stein.samplers import SteinSampler
@@ -34,7 +35,7 @@ start_time = time()
 # Number of learning iterations.
 n_iters = 500
 # Sample from the posterior using Stein variational gradient descent.
-n_particles = 100
+n_particles = 50
 gd = AdamGradientDescent(learning_rate=1e-1)
 sampler = SteinSampler(n_particles, log_p, gd)
 # Perform learning iterations.
@@ -42,7 +43,7 @@ for i in range(n_iters):
     start_iter = time()
     sampler.train_on_batch({model_X: data_X, model_y: data_y})
     end_iter = time()
-    print("Iteration {}. Time to complete iteration: {}".format(
+    print("Iteration {}. Time to complete iteration: {:.4f}".format(
         i, end_iter - start_iter
     ))
 
@@ -51,3 +52,15 @@ est = np.array(list(sampler.theta.values()))[0].mean(axis=0).ravel()
 print("True coefficients: {}".format(data_w.ravel()))
 print("Est. coefficients: {}".format(est))
 print("Time elapsed: {}".format(time() - start_time))
+
+# Visualize.
+if n_feats == 1:
+    r = np.atleast_2d(np.linspace(-4., 4., num=100)).T
+    Y = r.dot(sampler.theta[model_w][:, :, 0].T).T
+    plt.figure(figsize=(8, 6))
+    plt.plot(data_X.ravel(), data_y.ravel(), "r.", alpha=0.3)
+    for i in range(n_particles):
+        plt.plot(r.ravel(), Y[i], "b-", alpha=0.1)
+    plt.grid()
+    plt.xlim((-4., 4.))
+    plt.show()

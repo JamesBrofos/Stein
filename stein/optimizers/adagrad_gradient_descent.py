@@ -28,7 +28,7 @@ class AdagradGradientDescent(AbstractGradientDescent):
                 of the current squared gradient and the previous squared
                 gradients.
         """
-        super(AdagradGradientDescent, self).__init__(learning_rate, decay)
+        super().__init__(learning_rate, decay)
         self.alpha = alpha
 
     def update(self, phi):
