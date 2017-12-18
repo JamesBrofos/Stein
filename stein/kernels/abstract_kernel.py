@@ -1,9 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
+from ..utilities import compute_median
 
 
-class AbstractKernel(object):
+class AbstractKernel:
     """Abstract Kernel Class
 
     This class implements the template functionalities of a kernel for use with
@@ -13,8 +14,6 @@ class AbstractKernel(object):
     squared Euclidean distance between points in the input space, as well as an
     abstract method for computing the kernel and gradient of the kernel matrix.
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self, n_particles, sess):
         """Initialize the parameters of the abstract kernel object.
 
@@ -36,16 +35,9 @@ class AbstractKernel(object):
         self.D = r + tf.transpose(r) - 2 * tf.matmul(T, tf.transpose(T))
 
         # Compute the kernel bandwidth.
-        V = tf.reshape(self.D, [-1])
-        m = self.n_particles ** 2 // 2 + 1
-        if self.n_particles % 2 == 0:
-            bw = tf.reduce_mean(tf.nn.top_k(V, m).values[m - 2:])
-        else:
-            bw = tf.nn.top_k(V, m).values[m - 1]
+        m = compute_median(self.D)
         # Prevent gradients from propagating backwards through the median.
-        self.bandwidth = tf.stop_gradient(tf.sqrt(
-            0.5 * bw / np.log(self.n_particles + 1)
-        ))
+        self.bandwidth = tf.stop_gradient(tf.sqrt(m / np.log(self.n_particles)))
 
         # Set the TensorFlow session.
         self.sess = sess
