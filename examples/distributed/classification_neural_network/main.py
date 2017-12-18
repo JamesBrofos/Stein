@@ -27,8 +27,6 @@ n_batch = 100
 # Number of training data points.
 n_train, n_feats = X_train.shape
 n_test = X_test.shape[0]
-# Extract learning rate.
-learning_rate = 1e-2
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
@@ -91,12 +89,14 @@ with tf.variable_scope("model"):
 
 
 # Gradient descent object.
+learning_rate = 1e-1
 gd = AdamGradientDescent(learning_rate=learning_rate, decay=0.999)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
-n_particles = 20
+n_particles = 100
 n_threads = 4
-sampler = DistributedSteinSampler(n_threads, n_particles, log_p, gd)
+n_iters = 10
+sampler = DistributedSteinSampler(n_threads, n_iters, n_particles, log_p, gd)
 
 
 def evaluate(sampler, data_feed):
@@ -113,7 +113,7 @@ def evaluate(sampler, data_feed):
 
 # Current iteration of Stein variational gradient descent.
 current_iter = 0
-n_prog = 1
+n_prog = 10
 # Perform learning iterations.
 while True:
     # Increment the global number of learning iterations.
