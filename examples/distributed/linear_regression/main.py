@@ -35,9 +35,10 @@ start_time = time()
 n_iters = 500
 # Sample from the posterior using Stein variational gradient descent.
 n_threads = 4
+n_iters = 1
 n_particles = 4000
 gd = AdamGradientDescent(learning_rate=1e-1)
-sampler = DistributedSteinSampler(n_threads, n_particles, log_p, gd)
+sampler = DistributedSteinSampler(n_threads, n_iters, n_particles, log_p, gd)
 # Perform learning iterations.
 for i in range(n_iters):
     start_iter = time()

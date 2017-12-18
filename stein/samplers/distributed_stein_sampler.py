@@ -19,12 +19,14 @@ class DistributedSteinSampler(AbstractSteinSampler):
     particles collapsing to the same representative sample.
     """
     def __init__(
-            self, n_threads, n_particles, log_p, gd, theta=None
+            self, n_threads, n_iters, n_particles, log_p, gd, theta=None
     ):
         """Initialize the parameters of the distributed Stein sampler class.
 
             n_threads (int): The number of threads to use in the distributed
                 Stein variational gradient descent algorithm.
+            n_iters (int): The number of iterations of Stein variational
+                gradient descent to perform on a fixed subset of particles.
             n_particles (int): The number of particles to use in the algorithm.
                 This is equivalently the number of samples to generate from the
                 target distribution.
@@ -49,8 +51,10 @@ class DistributedSteinSampler(AbstractSteinSampler):
         """
         # Call the super class.
         super().__init__(n_particles, log_p, theta)
-        # Number of threads.
+        # Number of threads and the number of Stein variational gradient descent
+        # iterations to perform.
         self.n_threads = n_threads
+        self.n_iters = n_iters
         # Number of particles that each worker should train with.
         self.particles_per_worker = self.n_particles // self.n_threads
 
@@ -62,7 +66,11 @@ class DistributedSteinSampler(AbstractSteinSampler):
             ))
 
     def __train_on_batch(self, batch_feed, thread_index):
-        self.workers[thread_index].train_on_batch(batch_feed)
+        """Internal method that will call the `train_on_batch` method the
+        requisite number of times on a fixed subset of particles.
+        """
+        for _ in range(self.n_iters):
+            self.workers[thread_index].train_on_batch(batch_feed)
 
     def train_on_batch(self, batch_feed):
         """Implementation of abstract base class method."""
