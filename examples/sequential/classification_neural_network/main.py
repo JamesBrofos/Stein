@@ -3,6 +3,7 @@ import tensorflow as tf
 from scipy import io
 from sklearn.model_selection import train_test_split
 from tensorflow.contrib.distributions import Normal, Gamma
+from time import time
 from stein.samplers import SteinSampler
 from stein.optimizers import AdamGradientDescent
 
@@ -21,16 +22,12 @@ X_train = (X_train - X_train_mean) / X_train_std
 X_test = (X_test - X_train_mean) / X_train_std
 
 # Parameters for training such as the number of hidden neurons and the batch
-# size to use during training, the total number of training iterations, and the
-# number of particles to sample from the posterior.
+# size to use during training, the total number of training iterations.
 n_hidden = 50
 n_batch = 100
-n_particles = 20
 # Number of training data points.
 n_train, n_feats = X_train.shape
 n_test = X_test.shape[0]
-# Extract learning rate.
-learning_rate = 1e-2
 # Precision prior parameters.
 alpha, beta = 1., 0.01
 
@@ -93,9 +90,11 @@ with tf.variable_scope("model"):
 
 
 # Gradient descent object.
+learning_rate = 1e-1
 gd = AdamGradientDescent(learning_rate=learning_rate, decay=0.999)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
+n_particles = 1000
 sampler = SteinSampler(n_particles, log_p, gd)
 
 
@@ -111,9 +110,11 @@ def evaluate(sampler, data_feed):
     # Evaluation.
     return acc, ll
 
+# Keep track of timing.
+start_time = time()
 # Current iteration of Stein variational gradient descent.
 current_iter = 0
-n_prog = 1
+n_prog = 10
 # Perform learning iterations.
 while True:
     # Increment the global number of learning iterations.
@@ -128,6 +129,6 @@ while True:
         acc_test, ll_test = evaluate(
             sampler, {model_X: X_test, model_y: y_test}
         )
-        print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
-            current_iter, acc_test, ll_test
+        print("Iteration {}:\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}".format(
+            current_iter, acc_test, ll_test, time() - start_time
         ))

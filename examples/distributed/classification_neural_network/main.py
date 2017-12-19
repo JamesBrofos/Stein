@@ -3,6 +3,7 @@ import tensorflow as tf
 from scipy import io
 from sklearn.model_selection import train_test_split
 from tensorflow.contrib.distributions import Normal, Gamma
+from time import time
 from stein.samplers import DistributedSteinSampler
 from stein.optimizers import AdamGradientDescent
 
@@ -93,9 +94,9 @@ learning_rate = 1e-1
 gd = AdamGradientDescent(learning_rate=learning_rate, decay=0.999)
 # Perform Stein variational gradient descent to sample from the posterior
 # distribution of the Bayesian neural network.
-n_particles = 100
+n_particles = 1000
 n_threads = 4
-n_iters = 10
+n_iters = 1
 sampler = DistributedSteinSampler(n_threads, n_iters, n_particles, log_p, gd)
 
 
@@ -111,6 +112,8 @@ def evaluate(sampler, data_feed):
     # Evaluation.
     return acc, ll
 
+# Keep track of timing.
+start_time = time()
 # Current iteration of Stein variational gradient descent.
 current_iter = 0
 n_prog = 10
@@ -128,6 +131,6 @@ while True:
         acc_test, ll_test = evaluate(
             sampler, {model_X: X_test, model_y: y_test}
         )
-        print("Iteration {}:\t\t{:.4f}\t\t{:.4f}".format(
-            current_iter, acc_test, ll_test
+        print("Iteration {}:\t\t{:.4f}\t\t{:.4f}\t\t{:.4f}".format(
+            current_iter, acc_test, ll_test, time() - start_time
         ))

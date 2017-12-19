@@ -40,5 +40,5 @@ class AdagradGradientDescent(AbstractGradientDescent):
             self.hist = self.alpha * self.hist + (1. - self.alpha) * phi ** 2
         # Update the number of iterations.
         self.n_iters += 1
-
+        # Return the adagrad gradient update.
         return phi / (1e-6 + np.sqrt(self.hist)) * self.learning_rate

@@ -45,8 +45,8 @@ class AdamGradientDescent(AbstractGradientDescent):
         if self.n_iters == 0:
             self.mu, self.nu = phi, phi**2
         else:
-            self.mu = self.beta_1 * self.mu + (1.-self.beta_1) * phi
-            self.nu = self.beta_2 * self.nu + (1.-self.beta_2) * phi**2
+            self.mu = self.beta_1 * self.mu + (1. - self.beta_1) * phi
+            self.nu = self.beta_2 * self.nu + (1. - self.beta_2) * phi**2
 
         # Update the number of iterations.
         self.n_iters += 1
@@ -54,5 +54,5 @@ class AdamGradientDescent(AbstractGradientDescent):
         nup = self.nu / (1. - self.beta_2**self.n_iters)
         grad = mup / (1e-8 + np.sqrt(nup)) * self.learning_rate
         self.learning_rate *= self.decay
-
+        # Return the Adam gradient update.
         return grad

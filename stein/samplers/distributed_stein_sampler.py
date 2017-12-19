@@ -61,8 +61,12 @@ class DistributedSteinSampler(AbstractSteinSampler):
         # Create the workers.
         self.workers = []
         for i in range(self.n_threads):
+            work_idx = i*self.particles_per_worker
             self.workers.append(SteinSampler(
-                self.particles_per_worker, log_p, gd
+                self.particles_per_worker, log_p, gd, {
+                    v: x[work_idx:work_idx + self.particles_per_worker]
+                    for v, x in self.theta.items()
+                }
             ))
 
     def __train_on_batch(self, batch_feed, thread_index):
@@ -82,8 +86,9 @@ class DistributedSteinSampler(AbstractSteinSampler):
         threads = []
         for i in range(self.n_threads):
             # Assign the worker a given subset of the particles to update.
+            work_idx = i*self.particles_per_worker
             self.workers[i].theta = {
-                v: x[i:i+self.particles_per_worker]
+                v: x[work_idx:work_idx + self.particles_per_worker]
                 for v, x in self.theta.items()
             }
             # Create and start the thread.
