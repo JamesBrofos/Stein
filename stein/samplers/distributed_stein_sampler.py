@@ -107,7 +107,8 @@ class DistributedSteinSampler(AbstractSteinSampler):
         # particles.
         for v in self.theta:
             for i in range(self.n_threads):
-                self.theta[v][i:i+self.particles_per_worker] = (
+                work_idx = i*self.particles_per_worker
+                self.theta[v][work_idx:work_idx + self.particles_per_worker] = (
                     self.workers[i].theta[v]
                 )
 
